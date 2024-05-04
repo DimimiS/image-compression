@@ -1,0 +1,5 @@
+img/
+**/stl10_input.py
+stl_train/
+**/pycache/
+**/data
