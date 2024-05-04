@@ -25,18 +25,28 @@ x_test = x_test.astype('float32') / 255
 x_train = np.reshape(x_train, (len(x_train), 32, 32, 3))
 x_test = np.reshape(x_test, (len(x_test), 32, 32, 3))
 
-# STL-10 dataset from img file
-stl_train_path = "img"
-
-# import kodak dataset
-
+stl_train_path = 'C:\\Users\\dimis\\Desktop\\image-compression\\img\\'
 
 stl_train = []
 for filename in os.listdir(stl_train_path):
-    if filename.endswith(".png"):
-        img = image.load_img(filename)
-        stl_train.append(image.img_to_array(img))
+    img = image.load_img(stl_train_path+filename, target_size=(96, 96, 3))  # Add the full path to the image file
+    stl_train.append(image.img_to_array(img))
+    print(filename)
 stl_train = np.array(stl_train)
-
-
 print(stl_train.shape)
+
+stl_test_path = 'C:\\Users\\dimis\\Desktop\\image-compression\\stl_test\\'
+
+stl_test = []
+for filename in os.listdir(stl_test_path):
+    img = image.load_img(stl_test_path+filename, target_size=(96, 96, 3))  # Add the full path to the image file
+    stl_test.append(image.img_to_array(img))
+    print(filename)
+stl_test = np.array(stl_test)
+
+
+# reshape data
+stl_train = np.reshape(stl_train, (len(stl_train), 96, 96, 3))
+stl_test = np.reshape(stl_test, (len(stl_test), 96, 96, 3))
+print(stl_train.shape)
+print(stl_test.shape)
