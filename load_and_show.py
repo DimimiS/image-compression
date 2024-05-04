@@ -1,16 +1,9 @@
-import numpy as np
 import keras
 import matplotlib.pyplot as plt
+from dataset import x_test
 
+# Load the model
 model = keras.models.load_model('autoencoder.keras')
-
-# Load the CIFAR-10 dataset
-from keras.datasets import cifar10
-(x_train, _), (x_test, _) = cifar10.load_data()
-
-# Normalize the images
-x_train = x_train.astype('float32') / 255
-x_test = x_test.astype('float32') / 255
 
 # Predict the test images
 decoded_imgs = model.predict(x_test)
