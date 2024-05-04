@@ -1,10 +1,14 @@
-## Diploma Thesis Titled:
+## Diploma Thesis
+This is a repo for my master degree's thesis.
+
 # Image Compression With The Use Of Neural Networks
-This is a repo for my master degree's thesis. It is about image compression with the use of neural networks
 
 
 ### First implementation
-The first try for the creation of the model was quite simple and based on the Cifar10 dataset
+The first try for the creation of the model was quite simple and based on the Cifar10 dataset. 
+
+### Implementation progress
+Both binary crossentropy and mean square error were used. The results are very blurry and the small size of the images of the dataset are suspected
 
 ### Future steps
 Future steps include:
