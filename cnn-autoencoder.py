@@ -2,7 +2,7 @@ from keras import Sequential
 from keras.layers import Dense, Conv2D, MaxPooling2D, UpSampling2D, Flatten, Reshape, Input, Conv2DTranspose
 from keras.models import Model
 import matplotlib.pyplot as plt
-from dataset import x_train, x_test
+from dataset import x_train, x_test, stl_train, stl_test
 
 
 input_layer = Input(shape=(32, 32, 3), name="INPUT")
@@ -28,7 +28,7 @@ model.compile(optimizer='adam', loss='mse')
 model.summary()
 
 # Train the model
-model.fit(x_train, x_train, epochs=30, batch_size=32, shuffle=True, validation_data=(x_test, x_test))
+model.fit(slt_train, slt_train, epochs=30, batch_size=32, shuffle=True, validation_data=(slt_test, slt_test))
 
 # Save model
 model.save('autoencoder.keras')

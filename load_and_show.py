@@ -1,6 +1,6 @@
 import keras
 import matplotlib.pyplot as plt
-from dataset import x_test
+from dataset import x_test, stl_test
 
 # Load the model
 model = keras.models.load_model('autoencoder.keras')
