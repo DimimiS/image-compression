@@ -25,6 +25,7 @@ x_test = x_test.astype('float32') / 255
 x_train = np.reshape(x_train, (len(x_train), 32, 32, 3))
 x_test = np.reshape(x_test, (len(x_test), 32, 32, 3))
 
+# these are all the unlabeled data
 stl_train_path = 'C:\\Users\\dimis\\Desktop\\image-compression\\img\\'
 
 stl_train = []
@@ -33,8 +34,8 @@ for filename in os.listdir(stl_train_path):
     stl_train.append(image.img_to_array(img))
     print(filename)
 stl_train = np.array(stl_train)
-print(stl_train.shape)
 
+# all the labelled data are tests now
 stl_test_path = 'C:\\Users\\dimis\\Desktop\\image-compression\\stl_test\\'
 
 stl_test = []
@@ -44,6 +45,10 @@ for filename in os.listdir(stl_test_path):
     print(filename)
 stl_test = np.array(stl_test)
 
+
+# Normalize the images
+slt_train = x_train.astype('float32') / 255
+slt_test = x_test.astype('float32') / 255
 
 # reshape data
 stl_train = np.reshape(stl_train, (len(stl_train), 96, 96, 3))

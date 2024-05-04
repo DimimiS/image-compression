@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from dataset import x_train, x_test, stl_train, stl_test
 
 
-input_layer = Input(shape=(32, 32, 3), name="INPUT")
+input_layer = Input(shape=(96, 96, 3), name="INPUT")
 x = Conv2D(16, (3, 3), activation='relu', padding='same')(input_layer)
 x = MaxPooling2D((2, 2))(x)
 x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
@@ -28,7 +28,7 @@ model.compile(optimizer='adam', loss='mse')
 model.summary()
 
 # Train the model
-model.fit(slt_train, slt_train, epochs=30, batch_size=32, shuffle=True, validation_data=(slt_test, slt_test))
+model.fit(stl_train, stl_train, epochs=30, batch_size=32, shuffle=True, validation_data=(stl_test, stl_test))
 
 # Save model
 model.save('autoencoder.keras')
