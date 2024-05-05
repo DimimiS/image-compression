@@ -4,11 +4,10 @@ This is a repo for my master degree's thesis.
 # Image Compression With The Use Of Neural Networks
 
 
-### First implementation
-The first try for the creation of the model was quite simple and based on the Cifar10 dataset. 
-
 ### Implementation progress
-Both binary crossentropy and mean square error were used. The results are very blurry and the small size of the images of the dataset are suspected
+1. The first try for the creation of the model was quite simple and based on the Cifar10 dataset. 
+2. Both binary crossentropy and mean square error were used. The results are very blurry and the small size of the images of the Cifar10 dataset are suspected.
+3. Locally downloaded STL10 dataset and awaiting to see results from the first try.
 
 ### Future steps
 Future steps include:
