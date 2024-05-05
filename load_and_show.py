@@ -13,7 +13,6 @@ plt.figure(figsize=(10, 1))
 for i in range(10):
     ax = plt.subplot(1, 10, i + 1)
     plt.imshow(stl_test[i])
-    plt.gray()
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
     
@@ -22,7 +21,6 @@ plt.figure(figsize=(10, 1))
 for i in range(10):
     ax = plt.subplot(1, 10, i + 1)
     plt.imshow(decoded_imgs[i])
-    plt.gray()
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
 plt.show()
