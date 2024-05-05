@@ -44,5 +44,6 @@ for filename in os.listdir(stl_test_path):
     print(filename)
 stl_test = np.array(stl_test)
 
+
 print(stl_train.shape)
 print(stl_test.shape)
