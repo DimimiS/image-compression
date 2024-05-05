@@ -3,7 +3,11 @@ from keras.layers import Dense, Conv2D, MaxPooling2D, UpSampling2D, Flatten, Res
 from keras.models import Model
 import matplotlib.pyplot as plt
 from dataset import x_train, x_test, stl_train, stl_test
+import numpy
 
+# Normalize the images
+stl_train = stl_train.astype('float32') / 255
+stl_test = stl_test.astype('float32') / 255
 
 input_layer = Input(shape=(96, 96, 3), name="INPUT")
 x = Conv2D(16, (3, 3), activation='relu', padding='same')(input_layer)
@@ -28,7 +32,7 @@ model.compile(optimizer='adam', loss='mse')
 model.summary()
 
 # Train the model
-model.fit(stl_train, stl_train, epochs=30, batch_size=32, shuffle=True, validation_data=(stl_test, stl_test))
+model.fit(stl_train, stl_train, epochs=10, batch_size=32, shuffle=True, validation_data=(stl_test, stl_test))
 
 # Save model
 model.save('autoencoder.keras')
