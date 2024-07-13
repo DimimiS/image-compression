@@ -4,3 +4,12 @@ stl_train/
 stl_test/
 **/pycache/
 **/data
+Thesis_Research_Skamantzoura.pptx
+2109.01999.pdf
+model_components/__pycache__/analysis_block.cpython-310.pyc
+model_components/__pycache__/binarizer.cpython-310.pyc
+model_components/__pycache__/dataset.cpython-310.pyc
+model_components/__pycache__/model.cpython-310.pyc
+model_components/__pycache__/synthesis_block.cpython-310.pyc
+model_components/__pycache__/rnn_block.cpython-310.pyc
+model_components/__pycache__/GDN.cpython-310.pyc
