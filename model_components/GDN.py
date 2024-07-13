@@ -1,4 +1,3 @@
-import tensorflow as tf
 import tensorflow_compression as tfc
 from tensorflow.keras import layers
 import os
