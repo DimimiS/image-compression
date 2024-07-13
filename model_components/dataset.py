@@ -1,5 +1,6 @@
 from fastai.vision.all import untar_data, URLs
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import matplotlib.pyplot as plt
 import os
 
 
@@ -25,16 +26,20 @@ validation_generator = valid_datagen.flow_from_directory(
     class_mode='input'
 )
 
-# #  Display images
-# import matplotlib.pyplot as plt
+#  Display images
 
-# # Display a few images from the training set
-# images, _ = next(train_generator)
+# Display a few images from the training set
+train, _ = next(train_generator)
+valid, _ = next(validation_generator)
+
 # plt.figure(figsize=(10, 10))
 # for i in range(9):
 #     ax = plt.subplot(3, 3, i + 1)
-#     plt.imshow(images[i])
+#     plt.imshow(train[i])
 #     plt.axis("off")
 
 # plt.show()
 
+#  Show images dimensions
+print(f"Training Image Shape: {train[0].shape}")
+# Training Image Shape: (320, 320, 3)
