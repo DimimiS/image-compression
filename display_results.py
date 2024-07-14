@@ -19,12 +19,14 @@ compressed_train_rescaled = (compressed_train - compressed_train.min()) / (compr
 compressed_train_clipped = np.clip(compressed_train_rescaled, 0, 1)
 
 #  Display images
-# Convert the images back to RGB from YUV
-def yuv_to_rgb(image):
-    return cv2.cvtColor(image, cv2.COLOR_YUV2RGB)
+# Convert the images back to RGB from YUV and normalize the pixel values
+def yuv_to_rgb(yuv_image):
+    yuv_image = yuv_image * 255
+    yuv_image = yuv_image.astype(np.uint8)
+    return cv2.cvtColor(yuv_image, cv2.COLOR_YUV2RGB)
 
 #  Display images RGB ranges
-print(f"Training Image RGB Range: {compressed_train[0].min(), compressed_train[0].max()}")
+print(f"Training Image RGB Range: {yuv_to_rgb(compressed_train[0]).min(), yuv_to_rgb(compressed_train[0]).max()}")
 
 #  Show just one image in both original and compressed form in the same subplot
 plt.figure(figsize=(10, 10))
@@ -36,6 +38,3 @@ plt.title('Compressed Image')
 plt.imshow(yuv_to_rgb(compressed_train[0]))
 
 plt.show()
-#  Show images dimensions
-print(f"Training Image Shape: {train[0].shape}")
-# Training Image Shape: (320, 320, 3)
