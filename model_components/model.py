@@ -30,5 +30,6 @@ class ImageCompressionModel(tf.keras.Model):
         # x = self.dimension_reduction_layer(x)
         # x = self.reshape_layer(x)
         x = self.synthesis_block(x)
-        # x = self.rnn_block_dec(x)
+        # Clipping the output to ensure values are within [0, 1]
+        x = tf.clip_by_value(x, 0.0, 1.0)
         return x

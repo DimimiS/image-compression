@@ -12,6 +12,6 @@ def analysis_block(input_shape):
     x = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
     # x = GDN()(x)
     x = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
-    # x = GDN()(x)
+    x = GDN()(x)
     print(x.shape)
     return models.Model(inputs, x, name='analysis_block')

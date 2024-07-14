@@ -7,7 +7,7 @@ def synthesis_block(output_shape):
     inputs = tf.keras.Input(shape=output_shape)
     print(inputs.shape)
     x = layers.Conv2DTranspose(128, (3, 3), activation='relu', padding='same')(inputs)
-    # x = GDN(inverse=True)(x)
+    x = GDN(inverse=True)(x)
     x = layers.Conv2DTranspose(128, (3, 3), activation='relu', padding='same')(x)
     # x = GDN(inverse=True)(x)
     x = layers.Conv2DTranspose(128, (3, 3), activation='relu', padding='same')(x)

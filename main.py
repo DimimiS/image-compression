@@ -2,9 +2,13 @@ import tensorflow as tf
 # i,port the necessarey functions, objects and classes from the model_components module
 from model_components.model import ImageCompressionModel
 from model_components.dataset import train, valid, train_generator, validation_generator
+# # Enable mixed precision
+# from tensorflow.keras.mixed_precision import set_global_policy
+# set_global_policy('mixed_float16')
 
-train_generator.batch_size = 8
-validation_generator.batch_size = 8
+
+train_generator.batch_size = 2
+validation_generator.batch_size = 2
 
 # Custom Loss Function: This function calculates the mean absolute error between the true and predicted images
 def custom_loss(y_true, y_pred):
@@ -13,7 +17,7 @@ def custom_loss(y_true, y_pred):
 # Compile the Model with Adam optimizer and custom loss
 input_shape = (320, 320, 3)
 model = ImageCompressionModel(input_shape)
-model.compile(optimizer='adam', loss=custom_loss)
+model.compile(optimizer='adam', loss='mse')
 
 # Train the Model
 model.fit(
@@ -21,7 +25,7 @@ model.fit(
     steps_per_epoch=train_generator.samples // train_generator.batch_size,
     validation_data=validation_generator,
     validation_steps=validation_generator.samples // validation_generator.batch_size,
-    epochs=20
+    epochs=5
 )
 
 # Evaluate the Model on the validation set
@@ -29,4 +33,4 @@ loss = model.evaluate(validation_generator)
 print(f"Validation Loss: {loss}")
 
 # Save model
-model.save('cnn-only.keras')
+model.save('cnn-gdn.keras')
