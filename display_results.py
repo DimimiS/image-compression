@@ -2,6 +2,7 @@ import keras
 import matplotlib.pyplot as plt
 from model_components.dataset import train_generator, validation_generator
 import numpy as np
+import cv2
 
 
 # Load the model
@@ -17,6 +18,11 @@ compressed_train_rescaled = (compressed_train - compressed_train.min()) / (compr
 # Clipping the rescaled output to ensure it's within the valid range
 compressed_train_clipped = np.clip(compressed_train_rescaled, 0, 1)
 
+#  Display images
+# Convert the images back to RGB from YUV
+def yuv_to_rgb(image):
+    return cv2.cvtColor(image, cv2.COLOR_YUV2RGB)
+
 #  Display images RGB ranges
 print(f"Training Image RGB Range: {compressed_train[0].min(), compressed_train[0].max()}")
 
@@ -24,10 +30,10 @@ print(f"Training Image RGB Range: {compressed_train[0].min(), compressed_train[0
 plt.figure(figsize=(10, 10))
 plt.subplot(1, 2, 1)
 plt.title('Original Image')
-plt.imshow(train[0][0])
+plt.imshow(yuv_to_rgb(train[0][0]))
 plt.subplot(1, 2, 2)
 plt.title('Compressed Image')
-plt.imshow(compressed_train[0])
+plt.imshow(yuv_to_rgb(compressed_train[0]))
 
 plt.show()
 #  Show images dimensions
