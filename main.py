@@ -1,7 +1,7 @@
 import tensorflow as tf
 # i,port the necessarey functions, objects and classes from the model_components module
 from model_components.model import ImageCompressionModel
-from model_components.dataset import train, valid, train_generator, validation_generator
+from model_components.dataset import train_generator, validation_generator
 from model_components.model_metrics import MetricsLogger, psnr, ms_ssim, plot_metrics
 # # Enable mixed precision
 # from tensorflow.keras.mixed_precision import set_global_policy
@@ -19,7 +19,9 @@ def custom_loss(y_true, y_pred):
 input_shape = (320, 320, 3)
 model = ImageCompressionModel(input_shape)
 
-model.compile(optimizer='adam', loss='mse', metrics=[psnr, ms_ssim])
+# model.compile(optimizer='adam', loss='mse', metrics=[psnr, ms_ssim])
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001, clipnorm=1.0)
+model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=[psnr, ms_ssim])
 
 # Create an instance of the MetricsLogger callback
 metrics_logger = MetricsLogger()
@@ -30,7 +32,7 @@ model.fit(
     steps_per_epoch=train_generator.samples // train_generator.batch_size,
     validation_data=validation_generator,
     validation_steps=validation_generator.samples // validation_generator.batch_size,
-    epochs=1,
+    epochs=15,
     callbacks=[metrics_logger]
 )
 
