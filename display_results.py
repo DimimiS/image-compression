@@ -12,17 +12,13 @@ model = keras.models.load_model('/home/dimitra/Desktop/image-compression/cnn-gdn
 train = train_generator.next()
 compressed_train = model.predict(train[0])
 
-#  Manage GDN issue with scaling
-# Assuming compressed_train contains the model's output
-compressed_train_rescaled = (compressed_train - compressed_train.min()) / (compressed_train.max() - compressed_train.min())
-# Clipping the rescaled output to ensure it's within the valid range
-compressed_train_clipped = np.clip(compressed_train_rescaled, 0, 1)
-
 #  Display images
 # Convert the images back to RGB from YUV and normalize the pixel values
 def yuv_to_rgb(yuv_image):
-    # yuv_image = yuv_image.astype(np.uint8)
-    return cv2.cvtColor(yuv_image, cv2.COLOR_YUV2RGB)
+    rgb_image = cv2.cvtColor(yuv_image, cv2.COLOR_YUV2RGB)
+    # Clip or normalize the RGB image to be within the valid range
+    # rgb_image = np.clip(rgb_image, 0, 255)  # Assuming the image is in 8-bit format
+    return rgb_image
 
 #  Display images RGB ranges
 print(f"Training Image RGB Range: {yuv_to_rgb(compressed_train[0]).min(), yuv_to_rgb(compressed_train[0]).max()}")
