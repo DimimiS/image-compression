@@ -9,8 +9,8 @@ def analysis_block(input_shape):
     x = layers.LeakyReLU()(x)
     x = GDN()(x)
 
-    for _ in range(2):  # Simplified loop for repetitive blocks
-        x = layers.Conv2D(128, (3, 3), padding='same')(x)
+    for _ in range(1):  # Simplified loop for repetitive blocks
+        x = layers.Conv2D(64, (3, 3), padding='same')(x)
         x = layers.LeakyReLU()(x)
         x = GDN()(x)  # Ensure channels is an integer
 

@@ -11,8 +11,8 @@ def synthesis_block(output_shape):
     x = layers.LeakyReLU()(x)
     x = GDN( inverse=True)(x)
 
-    for _ in range(2):  # Simplified loop for repetitive blocks
-        x = layers.Conv2DTranspose(128, (3, 3), padding='same')(x)
+    for _ in range(1):  # Simplified loop for repetitive blocks
+        x = layers.Conv2DTranspose(64, (3, 3), padding='same')(x)
         x = layers.LeakyReLU()(x)
         x = GDN( inverse=True)(x)  # Ensure channels is an integer
 
