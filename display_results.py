@@ -5,61 +5,64 @@ import numpy as np
 import cv2
 from model_components.model_metrics import psnr, ms_ssim
 from model_components.custom_loss import RateDistortionLoss
-
-# loss = RateDistortionLoss()
+import tensorflow as tf
 
 # Load the model
 model = keras.models.load_model('/home/dimitra/Desktop/image-compression/cnn-gdn.keras', custom_objects={'psnr': psnr, 'ms_ssim': ms_ssim})
 
-#  Display images
-train = train_generator.next()
-compressed_train = model.predict(train[0])
+# Display images
+train_batch = next(train_generator)
+compressed_train = model.predict(train_batch[0])
 
-#  Display images
 # Convert the images back to RGB from YUV and normalize the pixel values
 def yuv_to_rgb(yuv_image):
     rgb_image = cv2.cvtColor(yuv_image, cv2.COLOR_YUV2RGB)
-    # Clip or normalize the RGB image to be within the valid range
-    # rgb_image = np.clip(rgb_image, 0, 255)  # Assuming the image is in 8-bit format
     return rgb_image
 
-
 def calculate_bit_rate(image_array):
-    # Get image dimensions and number of channels
     height, width, num_channels = image_array.shape
-    
-    # For most images, each channel will be 8 bits (1 byte)
     bits_per_channel = 8
-    
-    # Calculate the bit rate
     total_pixels = width * height
     bit_rate = total_pixels * num_channels * bits_per_channel
-    
     return bit_rate
 
-original_bit_rate = calculate_bit_rate(train[0][0])
+original_bit_rate = calculate_bit_rate(train_batch[0][0])
 compressed_bit_rate = calculate_bit_rate(compressed_train[0])
 
-# Get image's bit rate per pixel
-original_bit_rate_per_pixel = original_bit_rate / (train[0][0].shape[0] * train[0][0].shape[1])
+original_bit_rate_per_pixel = original_bit_rate / (train_batch[0][0].shape[0] * train_batch[0][0].shape[1])
 compressed_bit_rate_per_pixel = compressed_bit_rate / (compressed_train[0].shape[0] * compressed_train[0].shape[1])
 
-#  Display images RGB ranges
 print(f"Training Image RGB Range: {yuv_to_rgb(compressed_train[0]).min(), yuv_to_rgb(compressed_train[0]).max()}")
 
-#  Show just one image in both original and compressed form in the same subplot
 plt.figure(figsize=(10, 10))
 plt.subplot(2, 2, 1)
 plt.title('Original Image')
-plt.imshow((train[0][0]))
+plt.imshow((train_batch[0][0]))
 plt.subplot(2, 2, 3)
-plt.title('Original Image | Bit Rate: {:.2f} bits'.format(original_bit_rate_per_pixel))
-plt.imshow(yuv_to_rgb(train[0][0]))
+plt.title('Original Image | Bit Rate: {:.2f} bits/pixel'.format(original_bit_rate_per_pixel))
+plt.imshow(yuv_to_rgb(train_batch[0][0]))
 plt.subplot(2, 2, 2)
 plt.title('Compressed Image')
 plt.imshow((compressed_train[0]))
 plt.subplot(2, 2, 4)
-plt.title('Compressed Image | Bit Rate: {:.2f} bits'.format(compressed_bit_rate_per_pixel))
+plt.title('Compressed Image | Bit Rate: {:.2f} bits/pixel'.format(compressed_bit_rate_per_pixel))
 plt.imshow(yuv_to_rgb(compressed_train[0]))
 
-plt.show()
+# plt.show()
+
+def save_tensor_as_png(tensor, filename):
+    tensor = tf.image.convert_image_dtype(tensor, tf.uint8)
+    encoded_png = tf.image.encode_png(tensor)
+    tf.io.write_file(filename, encoded_png)
+
+# Save a fixed number of images from the generator
+num_images_to_save = 32
+for i in range(num_images_to_save):
+    image_original = yuv_to_rgb(train_batch[0][i])  # Assuming batch size of 1
+    image_compressed = yuv_to_rgb(model.predict(train_batch[0])[i])  # Assuming batch size of 1
+
+    filename_original = f'data/original/output_image_{i}.png'
+    save_tensor_as_png(image_original, filename_original)
+    filename_compressed = f'data/compressed/output_image_{i}.png'
+    save_tensor_as_png(image_compressed, filename_compressed)
+    print(f"Image saved as '{filename_original} and '{filename_compressed}'")
