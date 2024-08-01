@@ -23,14 +23,14 @@ valid_dir = os.path.join(path, 'val')
 # Prepare the Data Loaders using ImageDataGenerator
 train_generator = ImageDataGenerator(preprocessing_function=preprocess_image).flow_from_directory(
     train_dir,
-    target_size=(320, 320),
+    target_size=(256, 256),
     batch_size=32,
     class_mode='input'
 )
 
 validation_generator = ImageDataGenerator(preprocessing_function=preprocess_image).flow_from_directory(
     valid_dir,
-    target_size=(320, 320),
+    target_size=(256, 256),
     batch_size=32,
     class_mode='input'
 )
@@ -46,7 +46,7 @@ for i in range(9):
     plt.imshow(train[i])
     plt.axis("off")
 
-plt.show()
+# plt.show()
 
 #  Show images dimensions
 print(f"Training Image Shape: {train[0].shape}")
