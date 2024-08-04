@@ -17,7 +17,7 @@ class ImageCompressionModel(tf.keras.Model):
         self.rnn_block_dec = RNNBlock(rnn_units)
 
     def call(self, inputs):
-        encoded = self.analysis_block(inputs)
-        x = self.binarizer(encoded)
-        decoded = self.synthesis_block(x)
-        return encoded, decoded
+        x = self.analysis_block(inputs)
+        x = self.binarizer(x)
+        x = self.synthesis_block(x)
+        return x
