@@ -2,7 +2,7 @@ import tensorflow as tf
 
 
 def compute_entropy(x):
-    x_flat = tf.reshape(x, [-1])
+    x_flat = tf.reshape(x, (-1,))
     histogram = tf.histogram_fixed_width(x_flat, [tf.reduce_min(x_flat), tf.reduce_max(x_flat)], nbins=256)
     probabilities = histogram / tf.reduce_sum(histogram)
     probabilities = tf.clip_by_value(probabilities, 1e-10, 1.0)  # Avoid log(0)
@@ -15,9 +15,10 @@ class RateDistortionLoss(tf.keras.losses.Loss):
         self.lambda_param = lambda_param
         self.mse = tf.keras.losses.MeanSquaredError()
 
-    def loss(self, y_true, y_pred):
+
+    def call(self, y_true, y_pred):
         # Distortion (D): Mean Squared Error
-        distortion = tf.mse(y_true - y_pred)
+        distortion = self.mse(y_true, y_pred)
         
         # Rate (R): Calculate based on the number of bits
         rate = compute_entropy(y_pred)  # Using computed entropy directly
@@ -27,6 +28,3 @@ class RateDistortionLoss(tf.keras.losses.Loss):
         
         # Combine the losses
         return rate + self.lambda_param * distortion
-
-    def call(self, y_true, y_pred):
-        return self.loss(y_true, y_pred)
