@@ -10,7 +10,7 @@ def compute_entropy(x):
     return entropy
 
 class RateDistortionLoss(tf.keras.losses.Loss):
-    def __init__(self, lambda_param=0.0001, **kwargs):
+    def __init__(self, lambda_param=0.001, **kwargs):
         super().__init__(**kwargs)
         self.lambda_param = lambda_param
         self.mse = tf.keras.losses.MeanSquaredError()

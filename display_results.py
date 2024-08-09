@@ -19,33 +19,18 @@ def yuv_to_rgb(yuv_image):
     rgb_image = cv2.cvtColor(yuv_image, cv2.COLOR_YUV2RGB)
     return rgb_image
 
-def calculate_bit_rate(image_array):
-    height, width, num_channels = image_array.shape
-    bits_per_channel = 8
-    total_pixels = width * height
-    bit_rate = total_pixels * num_channels * bits_per_channel
-    return bit_rate
-
-original_bit_rate = calculate_bit_rate(train_batch[0][0])
-compressed_bit_rate = calculate_bit_rate(compressed_train[0])
-
-original_bit_rate_per_pixel = original_bit_rate / (train_batch[0][0].shape[0] * train_batch[0][0].shape[1])
-compressed_bit_rate_per_pixel = compressed_bit_rate / (compressed_train[0].shape[0] * compressed_train[0].shape[1])
-
-print(f"Training Image RGB Range: {yuv_to_rgb(compressed_train[0]).min(), yuv_to_rgb(compressed_train[0]).max()}")
-
 plt.figure(figsize=(10, 10))
 plt.subplot(2, 2, 1)
 plt.title('Original Image')
 plt.imshow((train_batch[0][0]))
 plt.subplot(2, 2, 3)
-plt.title('Original Image | Bit Rate: {:.2f} bits/pixel'.format(original_bit_rate_per_pixel))
+plt.title('Original Image | Bit Rate: {:.2f} bits/pixel')
 plt.imshow(yuv_to_rgb(train_batch[0][0]))
 plt.subplot(2, 2, 2)
 plt.title('Compressed Image')
 plt.imshow((compressed_train[0]))
 plt.subplot(2, 2, 4)
-plt.title('Compressed Image | Bit Rate: {:.2f} bits/pixel'.format(compressed_bit_rate_per_pixel))
+plt.title('Compressed Image | Bit Rate: {:.2f} bits/pixel')
 plt.imshow(yuv_to_rgb(compressed_train[0]))
 
 # plt.show()
@@ -66,3 +51,29 @@ for i in range(num_images_to_save):
     filename_compressed = f'data/compressed/output_image_{i}.png'
     save_tensor_as_png(image_compressed, filename_compressed)
     print(f"Image saved as '{filename_original} and '{filename_compressed}'")
+
+import os
+import numpy as np
+from PIL import Image
+
+def calculate_bpp(compressed_image_path, original_image_path):
+    # Get size of the compressed image in bits
+    compressed_size_bytes = os.path.getsize(compressed_image_path)
+    compressed_size_bits = compressed_size_bytes * 8
+    
+    # Load the original image to get dimensions
+    original_image = Image.open(original_image_path)
+    width, height = original_image.size
+    total_pixels = width * height
+    
+    # Calculate bpp
+    bpp = compressed_size_bits / total_pixels
+    return bpp
+
+# Example usage
+compressed_image_path = 'data/compressed/output_image_1.png'
+original_image_path = 'data/original/output_image_1.png'
+bpp_value = calculate_bpp(compressed_image_path, original_image_path)
+
+print(f'Bits per Pixel (bpp): {bpp_value:.4f}')
+

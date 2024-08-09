@@ -8,16 +8,15 @@ def synthesis_block(output_shape):
     inputs = tf.keras.Input(shape=output_shape)
     x = layers.Conv2DTranspose(128, (3, 3), padding='same')(inputs)
     x = layers.LeakyReLU()(x)
-    x = layers.UpSampling2D((2, 2))(x)  # Upsample
-    x = GDN( inverse=True)(x)
+    # x = layers.UpSampling2D((2, 2))(x)  # Upsample
 
-    for _ in range(1):  # Simplified loop for repetitive blocks
+    for _ in range(2):  # Simplified loop for repetitive blocks
         x = layers.Conv2DTranspose(64, (3, 3), padding='same')(x)
+        # x = GDN(inverse=True)(x)
         x = layers.LeakyReLU()(x)
         x = layers.UpSampling2D((2, 2))(x)  # Upsample
-        x = GDN(inverse=True)(x)
 
-    # x = layers.Conv2DTranspose(3, (3, 3), padding='same')(x)
     x = layers.Conv2DTranspose(3, (3, 3), padding='same', activation='sigmoid')(x)
     x = layers.LeakyReLU()(x)
+    x = GDN(inverse=True)(x)
     return models.Model(inputs, x, name='synthesis_block')

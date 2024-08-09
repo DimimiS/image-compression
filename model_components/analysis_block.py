@@ -8,12 +8,12 @@ def analysis_block(input_shape):
     x = layers.Conv2D(3, (3, 3), padding='same')(inputs)
     x = layers.LeakyReLU()(x)
     x = GDN()(x)
-    x = layers.MaxPooling2D((2, 2))(x)  # Downsample
+    # x = layers.MaxPooling2D((2, 2))(x)  # Downsample
 
-    for _ in range(1):  # Simplified loop for repetitive blocks
+    for _ in range(2):  # Simplified loop for repetitive blocks
         x = layers.Conv2D(64, (3, 3), padding='same')(x)
         x = layers.LeakyReLU()(x)
-        x = GDN()(x)
+        # x = GDN()(x)
         x = layers.MaxPooling2D((2, 2))(x)  # Downsample
 
     x = layers.Conv2D(128, (3, 3), padding='same')(x)
