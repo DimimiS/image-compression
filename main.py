@@ -16,8 +16,6 @@ model = ImageCompressionModel(input_shape)
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001, clipnorm=1.0)
 model.compile(optimizer=optimizer, loss=rd_loss, metrics=[psnr, ms_ssim])
 
-# model.build(input_shape=(None, 320, 320, 3))
-# model.summary()
 # Create an instance of the MetricsLogger callback
 metrics_logger = MetricsLogger()
 
@@ -27,7 +25,7 @@ model.fit(
     steps_per_epoch=train_generator.samples // train_generator.batch_size,
     validation_data=validation_generator,
     validation_steps=validation_generator.samples // validation_generator.batch_size,
-    epochs=50,
+    epochs=10,
     callbacks=[metrics_logger]
 )
 

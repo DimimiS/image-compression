@@ -52,28 +52,9 @@ for i in range(num_images_to_save):
     save_tensor_as_png(image_compressed, filename_compressed)
     print(f"Image saved as '{filename_original} and '{filename_compressed}'")
 
-import os
-import numpy as np
-from PIL import Image
-
-def calculate_bpp(compressed_image_path, original_image_path):
-    # Get size of the compressed image in bits
-    compressed_size_bytes = os.path.getsize(compressed_image_path)
-    compressed_size_bits = compressed_size_bytes * 8
+    # Calculate compression ratio
+    original_size = tf.io.gfile.stat(filename_original).length
+    compressed_size = tf.io.gfile.stat(filename_compressed).length
+    compression_ratio = original_size / compressed_size
+    print(f"Compression Ratio for image {i}: {compression_ratio:.2f}")
     
-    # Load the original image to get dimensions
-    original_image = Image.open(original_image_path)
-    width, height = original_image.size
-    total_pixels = width * height
-    
-    # Calculate bpp
-    bpp = compressed_size_bits / total_pixels
-    return bpp
-
-# Example usage
-compressed_image_path = 'data/compressed/output_image_1.png'
-original_image_path = 'data/original/output_image_1.png'
-bpp_value = calculate_bpp(compressed_image_path, original_image_path)
-
-print(f'Bits per Pixel (bpp): {bpp_value:.4f}')
-
