@@ -11,29 +11,13 @@ import tensorflow as tf
 model = keras.models.load_model('/home/dimitra/Desktop/image-compression/cnn-gdn.keras', custom_objects={'psnr': psnr, 'ms_ssim': ms_ssim})
 
 # Display images
-train_batch = next(train_generator)
-compressed_train = model.predict(train_batch[0])
+batch = next(validation_generator)
+compressed = model.predict(batch[0])
 
 # Convert the images back to RGB from YUV and normalize the pixel values
 def yuv_to_rgb(yuv_image):
     rgb_image = cv2.cvtColor(yuv_image, cv2.COLOR_YUV2RGB)
     return rgb_image
-
-plt.figure(figsize=(10, 10))
-plt.subplot(2, 2, 1)
-plt.title('Original Image')
-plt.imshow((train_batch[0][0]))
-plt.subplot(2, 2, 3)
-plt.title('Original Image | Bit Rate: {:.2f} bits/pixel')
-plt.imshow(yuv_to_rgb(train_batch[0][0]))
-plt.subplot(2, 2, 2)
-plt.title('Compressed Image')
-plt.imshow((compressed_train[0]))
-plt.subplot(2, 2, 4)
-plt.title('Compressed Image | Bit Rate: {:.2f} bits/pixel')
-plt.imshow(yuv_to_rgb(compressed_train[0]))
-
-# plt.show()
 
 def save_tensor_as_png(tensor, filename):
     tensor = tf.image.convert_image_dtype(tensor, tf.uint8)
@@ -43,8 +27,8 @@ def save_tensor_as_png(tensor, filename):
 # Save a fixed number of images from the generator
 num_images_to_save = 32
 for i in range(num_images_to_save):
-    image_original = yuv_to_rgb(train_batch[0][i])  # Assuming batch size of 1
-    image_compressed = yuv_to_rgb(model.predict(train_batch[0])[i])  # Assuming batch size of 1
+    image_original = yuv_to_rgb(batch[0][i])  # Assuming batch size of 1
+    image_compressed = yuv_to_rgb(model.predict(batch[0])[i])  # Assuming batch size of 1
 
     filename_original = f'data/original/output_image_{i}.png'
     save_tensor_as_png(image_original, filename_original)
@@ -58,3 +42,19 @@ for i in range(num_images_to_save):
     compression_ratio = original_size / compressed_size
     print(f"Compression Ratio for image {i}: {compression_ratio:.2f}")
     
+
+plt.figure(figsize=(10, 10))
+plt.subplot(2, 2, 1)
+plt.title('Original Image')
+plt.imshow(yuv_to_rgb(batch[0][0]))
+plt.subplot(2, 2, 3)
+plt.title('Original Image')
+plt.imshow(yuv_to_rgb(batch[0][1]))
+plt.subplot(2, 2, 2)
+plt.title('Compressed Image')
+plt.imshow(yuv_to_rgb(compressed[0]))
+plt.subplot(2, 2, 4)
+plt.title('Compressed Image')
+plt.imshow(yuv_to_rgb(compressed[1]))
+
+plt.show()
