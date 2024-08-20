@@ -67,14 +67,38 @@ for i, image in enumerate(kodak_images):
     save_tensor_as_png(prediction, output_path)
     print(f"Saved prediction to {output_path}")
 
-# Display the first predictions vs original images
-plt.figure(figsize=(10, 10))
-plt.subplot(1, 2, 1)
-plt.title('Original Image')
-plt.imshow(kodak_images[0])
-plt.axis('off')
-plt.subplot(1, 2, 2)
-plt.title('Predicted Image')
-plt.imshow(predictions[0])
-plt.axis('off')
-plt.show()
+# Calculate the PSNR and MS-SSIM for the images
+psnr_values = []
+ms_ssim_values = []
+for i, image in enumerate(kodak_images):
+    prediction = predictions[i]
+    # Convert images to float32 and normalize to [0, 1]
+    image_float32 = image.astype(np.float32) / 255.0
+    prediction_float32 = prediction.astype(np.float32) / 255.0
+    # Calculate PSNR
+    psnr_value = tf.image.psnr(image_float32, prediction_float32, max_val=1.0).numpy()
+    # Calculate MS-SSIM
+    ms_ssim_value = tf.image.ssim_multiscale(image_float32, prediction_float32, max_val=1.0).numpy()
+    psnr_values.append(psnr_value)
+    ms_ssim_values.append(ms_ssim_value)
+    print(f"Image {i + 1} - PSNR: {psnr_value:.2f}, MS-SSIM: {ms_ssim_value:.4f}")
+
+# Calculate the average PSNR and MS-SSIM
+avg_psnr = np.mean(psnr_values)
+avg_ms_ssim = np.mean(ms_ssim_values)
+print(f"Average PSNR: {avg_psnr:.2f}")
+print(f"Average MS-SSIM: {avg_ms_ssim:.4f}")
+
+# Calculate bits per pixel (bpp) for the images
+bpp_values = []
+for i, image in enumerate(kodak_images):
+    # Calculate the size of the compressed image
+    compressed_size = os.path.getsize(os.path.join(output_dir, f'kodim{i + 1}_pred.png'))
+    # Calculate the bpp
+    bpp = (compressed_size * 8) / (256 * 256)
+    bpp_values.append(bpp)
+    print(f"Image {i + 1} - BPP: {bpp:.4f}")
+
+# Calculate the average bpp
+avg_bpp = np.mean(bpp_values)
+print(f"Average BPP: {avg_bpp:.4f}")

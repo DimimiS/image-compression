@@ -41,7 +41,16 @@ for i in range(num_images_to_save):
     compressed_size = tf.io.gfile.stat(filename_compressed).length
     compression_ratio = original_size / compressed_size
     print(f"Compression Ratio for image {i}: {compression_ratio:.2f}")
-    
+
+    # Calculate PSNR and MS-SSIM
+    psnr_value = psnr(image_original, image_compressed)
+    ms_ssim_value = ms_ssim(image_original, image_compressed)
+    print(f"PSNR for image {i}: {psnr_value:.2f}")
+    print(f"MS-SSIM for image {i}: {ms_ssim_value:.2f}")
+
+    # Calculate the bits per pixel
+    bpp = compressed_size * 8 / (256 * 256)
+    print(f"Bits per Pixel for image {i}: {bpp:.2f}")
 
 plt.figure(figsize=(10, 10))
 plt.subplot(2, 2, 1)
