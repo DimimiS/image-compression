@@ -40,14 +40,6 @@ validation_generator = ImageDataGenerator(preprocessing_function=preprocess_imag
 train, _ = next(train_generator)
 valid, _ = next(validation_generator)
 
-plt.figure(figsize=(10, 10))
-for i in range(9):
-    ax = plt.subplot(3, 3, i + 1)
-    plt.imshow(train[i])
-    plt.axis("off")
-
-# plt.show()
-
 #  Show images dimensions
 print(f"Training Image Shape: {train[0].shape}")
 # Training Image Shape: (320, 320, 3)
