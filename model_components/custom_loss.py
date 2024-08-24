@@ -1,13 +1,36 @@
 import tensorflow as tf
 
 
-def compute_entropy(x):
-    x_flat = tf.reshape(x, (-1,))
-    histogram = tf.histogram_fixed_width(x_flat, [tf.reduce_min(x_flat), tf.reduce_max(x_flat)], nbins=256)
-    probabilities = histogram / tf.reduce_sum(histogram)
-    probabilities = tf.clip_by_value(probabilities, 1e-10, 1.0)  # Avoid log(0)
-    entropy = -tf.cast(tf.reduce_sum(probabilities * tf.math.log(probabilities)), tf.float32)/tf.math.log(2.0)
-    return entropy
+# Function that calculates the average bits per pixel (bpp) of the predicted batch of images after calculating the bpp of each image accurately
+import tensorflow as tf
+
+def calculate_bit_rate(y_true, y_pred):
+    # Get the batch size dynamically
+    batch_size = tf.shape(y_pred)[0]
+    
+    # Assuming y_pred has shape (batch_size, height, width, channels)
+    height = tf.shape(y_pred)[1]
+    width = tf.shape(y_pred)[2]
+    
+    compression_ratio = 0.0
+    for i in range(batch_size):
+        # Cast the image to uint8
+        image_uint8 = tf.cast(y_true[i], tf.uint8)
+        compressed_uint8 = tf.cast(y_pred[i], tf.uint8)
+
+        # Get number of bytes for the compressed image without encoding to png
+        compressed_size = tf.strings.length(tf.image.encode_png(compressed_uint8))
+        # Get number of bytes for the original image without encoding to png
+        original_size = tf.strings.length(tf.image.encode_png(image_uint8))
+        # Calculate the compression ratio
+        compression_ratio += tf.cast(original_size, tf.float32) / tf.cast(compressed_size, tf.float32)
+
+    # Calculate the average compression ratio
+    avg_compression_ratio = compression_ratio / tf.cast(batch_size, tf.float32)
+    # Calculate the bpp
+    bpp = avg_compression_ratio * 8
+
+    return bpp
 
 class RateDistortionLoss(tf.keras.losses.Loss):
     def __init__(self, lambda_param=0.01, **kwargs):
@@ -17,20 +40,12 @@ class RateDistortionLoss(tf.keras.losses.Loss):
 
 
     def call(self, y_true, y_pred):
-        # Calculate the number of pixels in the image
-        num_pixels = tf.cast(tf.reduce_prod(tf.shape(y_true)[:-1]), tf.float32)
-
-        # Calculate compression ratio of a single image of the batch
-        bpp = compute_entropy(y_pred) / num_pixels
 
         # Distortion (D): Mean Squared Error
         distortion = self.mse(y_true, y_pred)
-        
-        # Rate (R): Entropy of the compressed image
-        rate = bpp
 
-        # Ensure rate is of type float32
-        rate = tf.cast(rate, tf.float32)
+        # Rate (R): Bits per Pixel (bpp)
+        rate = calculate_bit_rate(y_true, y_pred)
         
         # Combine the losses
         return rate + self.lambda_param * distortion
