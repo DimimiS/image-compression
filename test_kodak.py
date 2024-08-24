@@ -102,3 +102,17 @@ for i, image in enumerate(kodak_images):
 # Calculate the average bpp
 avg_bpp = np.mean(bpp_values)
 print(f"Average BPP: {avg_bpp:.4f}")
+
+# Display the original and predicted images
+plt.figure(figsize=(10, 10))
+for i in range(5):
+    plt.subplot(5, 2, 2 * i + 1)
+    plt.imshow(kodak_images[i])
+    plt.title(f'Original Image {i + 1}')
+    plt.axis('off')
+    plt.subplot(5, 2, 2 * i + 2)
+    plt.imshow(predictions[i])
+    plt.title(f'Predicted Image {i + 1}')
+    plt.axis('off')
+plt.tight_layout()
+plt.show()
