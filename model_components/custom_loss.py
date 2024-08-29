@@ -27,13 +27,13 @@ def calculate_bit_rate(y_true, y_pred):
 
     # Calculate the average compression ratio
     avg_compression_ratio = compression_ratio / tf.cast(batch_size, tf.float32)
-    # Calculate the bpp
-    bpp = avg_compression_ratio * 8
+    # Calculate the bits per pixel (bpp)
+    bpp = 8 / avg_compression_ratio
 
-    return bpp
+    return 1/avg_compression_ratio
 
 class RateDistortionLoss(tf.keras.losses.Loss):
-    def __init__(self, lambda_param=0.01, **kwargs):
+    def __init__(self, lambda_param=0.001, **kwargs):
         super().__init__(**kwargs)
         self.lambda_param = lambda_param
         self.mse = tf.keras.losses.MeanSquaredError()
