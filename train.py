@@ -10,8 +10,8 @@ import time
 from models.rd_loss import BppDistortionLoss
 
 # Paths
-train_dir = 'data/train'
-val_dir = 'data/val'
+train_dir = 'data/train/png'
+val_dir = 'data/val/png'
 
 # Datasets and Dataloaders
 train_dataset = ImageDataset(train_dir, transform=data_transforms['train'])
@@ -37,27 +37,41 @@ for epoch in range(100):
     print('Training...')
     start_time = time.time()
     model.train()
-    for inputs in train_loader:
+    running_loss = 0.0
+    for i, inputs in enumerate(train_loader):
         inputs = inputs.to(device)
         optimizer.zero_grad()
         outputs = model(inputs)
-        loss = bpp_distortion_loss(outputs, inputs)[0]
+        loss, bpp, distortion = bpp_distortion_loss(outputs, inputs)
         loss.backward()
+        
+        # Apply gradient clipping
+        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        
         optimizer.step()
-    print(f'Epoch {epoch+1}, Loss: {loss.item():.4f}')
+        
+        running_loss += loss
+        if (i + 1) % 20 == 0:  # Print every 20 batches
+            print(f'Batch {i+1}/{len(train_loader)}, Loss: {loss:.4f}, Bpp: {bpp:.4f}, MSE: {distortion.item():.4f}')
+    
+    avg_train_loss = running_loss / len(train_loader)
+    print(f'Epoch {epoch+1}, Average Training Loss: {avg_train_loss:.4f}')
     print(f'Time taken: {time.time() - start_time:.2f}s')
 
     print('Validation loss calculation...')
     # Validation
     model.eval()
-    val_loss = 0
+    val_loss = 0.0
     with torch.no_grad():
-        for inputs in val_loader:
+        for i, inputs in enumerate(val_loader):
             inputs = inputs.to(device)
             outputs = model(inputs)
-            loss = bpp_distortion_loss(outputs, inputs)[0]
+            loss, bpp, distortion = bpp_distortion_loss(outputs, inputs)
             val_loss += loss.item()
-    val_loss /= len(val_loader)
-    print(f'Epoch {epoch+1}, Validation Loss: {val_loss:.4f}')
+            print(f'Validation Batch {i+1}/{len(val_loader)}, Loss: {loss.item():.4f}, Bpp: {bpp:.4f}, MSE: {distortion.item():.4f}') if (i + 1) % 20 == 0 else None
+    
+    avg_val_loss = val_loss / len(val_loader)
+    print(f'Epoch {epoch+1}, Average Validation Loss: {avg_val_loss:.4f}')
+    print(f'Time taken: {time.time() - start_time:.2f}s')
 
 torch.save(model.state_dict(), 'model.pth')
