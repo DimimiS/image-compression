@@ -41,7 +41,7 @@ class Sign(nn.Module):
 class Binarizer(nn.Module):
     def __init__(self):
         super(Binarizer, self).__init__()
-        self.conv = nn.Conv2d(256, 256, kernel_size=1, bias=False)
+        self.conv = nn.Conv2d(512, 512, kernel_size=1, bias=False)
         self.sign = Sign()
 
     def forward(self, input):
