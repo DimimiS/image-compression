@@ -6,3 +6,5 @@ Thesis_Research_Skamantzoura.pptx
 model_components/__pycache__
 predictions/
 output/
+models/__pycache__/
+utils/__pycache__/
