@@ -1,5 +1,7 @@
 import torch
 import torch.nn.functional as F
+from pytorch_msssim import ms_ssim
+from compressai.entropy_models import EntropyBottleneck
 
 def calculate_bits_per_pixel(outputs, image_size):
     """
@@ -56,22 +58,28 @@ def calculate_entropy(latent):
     return entropy / latent_flat.size(0)  # Normalize by batch size
 
 class BppDistortionLoss(torch.nn.Module):
-    def __init__(self, lambda_bpp=0.01, lambda_distortion=1.0, lambda_entropy=1.0):
+    def __init__(self, lmbda=0.01):
         super(BppDistortionLoss, self).__init__()
-        self.lambda_bpp = lambda_bpp
-        self.lambda_distortion = lambda_distortion
-        self.lambda_entropy = lambda_entropy
+        self.lmbda = lmbda
+        self.entropy_bottleneck = EntropyBottleneck(3)
 
-    def forward(self, outputs, inputs, latent):
-        # Calculate distortion (MSE)
-        distortion = F.mse_loss(outputs, inputs, reduction='mean')
+    def forward(self, x, x_hat, y_hat, training=True):
+        # Compute the bits using entropy bottleneck
+        y_hat, likelihoods = self.entropy_bottleneck(x_hat)
+
+        # Calculate the number of pixels
+        num_pixels = x.size(0) * x.size(2) * x.size(3)
 
         # Calculate bits per pixel (bpp)
-        bpp = calculate_bits_per_pixel(outputs, inputs.shape[-2:])
+        bpp = sum(torch.sum(-torch.log(likelihood)) for likelihood in likelihoods) / num_pixels
 
-        # Calculate entropy of the latent space
-        entropy = calculate_entropy(latent)
+        # Mean squared error (MSE)
+        mse = F.mse_loss(x, x_hat, reduction='mean')
 
-        # Combine bpp, distortion, and entropy
-        loss = self.lambda_distortion * distortion + self.lambda_entropy * entropy
-        return loss, bpp, distortion, entropy
+        # Calculate MSSSIM loss
+        ms_ssim_val = 1 - ms_ssim(x, x_hat, data_range=1.0)
+
+        # Rate-distortion loss
+        loss = bpp + self.lmbda * mse
+
+        return loss, bpp, mse
