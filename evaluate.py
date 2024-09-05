@@ -36,6 +36,11 @@ with torch.no_grad():
     for inputs in test_loader:
         inputs = inputs.to(device)
         outputs = model(inputs)
+        
+        # Ensure outputs is a tensor
+        if isinstance(outputs, tuple):
+            outputs = outputs[0]
+
         loss = mse_loss(outputs, inputs) + (1 - ms_ssim_loss(outputs, inputs))
         test_loss += loss.item()
 
@@ -63,12 +68,20 @@ with torch.no_grad():
     for i, inputs in enumerate(test_loader):
         inputs = inputs.to(device)
         outputs = model(inputs)
+        
+        # Extract the relevant tensor from the tuple
+        outputs = outputs[0]
+        
         for j in range(inputs.size(0)):
             torchvision.utils.save_image(inputs[j], os.path.join(output_dir, f'input_{i * inputs.size(0) + j}.png'))
             torchvision.utils.save_image(outputs[j], os.path.join(output_dir, f'output_{i * inputs.size(0) + j}.png'))
             if i == 0 and j == 0:
-                Image.fromarray((inputs[j].permute(1, 2, 0).cpu().numpy() * 255).astype('uint8')).show()
-                Image.fromarray((outputs[j].permute(1, 2, 0).cpu().numpy() * 255).astype('uint8')).show()
+                # Ensure outputs[j] is a single image tensor
+                input_img = inputs[j].permute(1, 2, 0).cpu().numpy()
+                output_img = outputs[j].permute(1, 2, 0).cpu().numpy()  # Explicitly select the image tensor
+                
+                Image.fromarray((input_img * 255).astype('uint8')).show()
+                Image.fromarray((output_img * 255).astype('uint8')).show()
 
                 # Calculate bpp from compression ratio of saved images
                 input_size = os.path.getsize(os.path.join(output_dir, f'input_{i * inputs.size(0) + j}.png'))
