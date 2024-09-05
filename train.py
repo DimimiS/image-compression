@@ -8,6 +8,7 @@ from utils.transforms import data_transforms
 from pytorch_msssim import MS_SSIM
 import time
 from models.rd_loss import BppDistortionLoss
+from torch.autograd import Variable
 
 # Paths
 train_dir = 'data/train/png'
@@ -26,11 +27,11 @@ model = Autoencoder().to(device)
 mse_loss = torch.nn.MSELoss()
 perceptual_loss = VGGPerceptualLoss().to(device)
 ms_ssim_loss = MS_SSIM(data_range=1.0, size_average=True, channel=3).to(device)
-bpp_distortion_loss = BppDistortionLoss(lambda_bpp=1.0, lambda_distortion=0.001).to(device)
+bpp_distortion_loss = BppDistortionLoss(lmbda=0.01).to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
 # Training Loop
-for epoch in range(100):
+for epoch in range(10):
     print('-' * 10)
     print(f'Epoch {epoch+1}')
     print('-' * 10)
@@ -41,16 +42,20 @@ for epoch in range(100):
     for i, inputs in enumerate(train_loader):
         inputs = inputs.to(device)
         optimizer.zero_grad()
-        outputs, latent = model(inputs)
-        loss, bpp, distortion, entropy = bpp_distortion_loss(outputs, inputs, latent)
+
+        # Forward pass
+        outputs, y_hat = model(inputs)
+
+        # Calculate loss
+        loss, bpp, mse = bpp_distortion_loss(inputs, outputs, y_hat, training=True)
         loss.backward()
-        
-        # Apply gradient clipping if needed
+
+        # Update weights
         optimizer.step()
         
         running_loss += loss.item()
         if (i + 1) % 20 == 0:  # Print every 20 batches
-            print(f'Batch {i+1}/{len(train_loader)}, Loss: {loss:.4f}, Bpp: {bpp:.4f}, MSE: {distortion:.4f}, Entropy: {entropy:.4f}')
+            print(f'Batch {i+1}/{len(train_loader)}, Loss: {loss:.4f}, BPP: {bpp:.4f}, MSE: {mse:.4f}')
     
     avg_train_loss = running_loss / len(train_loader)
     print(f'Epoch {epoch+1}, Average Training Loss: {avg_train_loss:.4f}')
@@ -63,11 +68,11 @@ for epoch in range(100):
     with torch.no_grad():
         for i, inputs in enumerate(val_loader):
             inputs = inputs.to(device)
-            outputs, latent = model(inputs)
-            loss, bpp, distortion, entropy = bpp_distortion_loss(outputs, inputs, latent)
+            outputs, y_hat = model(inputs)
+            loss, bpp, mse = bpp_distortion_loss(inputs, outputs, y_hat, training=False)
             val_loss += loss.item()
             if (i + 1) % 20 == 0:
-                print(f'Validation Batch {i+1}/{len(val_loader)}, Loss: {loss:.4f}, Bpp: {bpp:.4f}, MSE: {distortion:.4f}, Entropy: {entropy:.4f}')
+                print(f'Validation Batch {i+1}/{len(val_loader)}, Loss: {loss:.4f}, BPP: {bpp:.4f}, MSE: {mse:.4f}')
     
     avg_val_loss = val_loss / len(val_loader)
     print(f'Epoch {epoch+1}, Average Validation Loss: {avg_val_loss:.4f}')
