@@ -3,6 +3,18 @@ from .gdn import GDN
 from .sign import Binarizer
 from .residual_block import ResidualBlock
 from compressai.entropy_models import EntropyBottleneck
+import torch
+
+def calculate_entropy(latent):
+    """
+    Function that calculates the entropy for each image in the batch using histograms
+    """
+    entropy = 0
+    for i in range(latent.size(0)):
+        hist = torch.histc(latent[i], bins=256, min=latent[i].min().item(), max=latent[i].max().item())
+        hist = hist / hist.sum()
+        entropy += -torch.sum(hist * torch.log2(hist + 1e-6))
+    return entropy / latent.size(0)
 
 class Autoencoder(nn.Module):
     def __init__(self):
@@ -28,7 +40,6 @@ class Autoencoder(nn.Module):
             ResidualBlock(3),
             nn.Sigmoid()
         )
-        self.entropy_bottleneck = EntropyBottleneck(512)
         self.binarizer = Binarizer()
 
     def forward(self, x):
@@ -36,5 +47,6 @@ class Autoencoder(nn.Module):
 
         binarized = self.binarizer(latent)
         reconstructed = self.decoder(binarized)
+        entropy = calculate_entropy(reconstructed)
 
-        return reconstructed, latent  
+        return reconstructed, latent, entropy

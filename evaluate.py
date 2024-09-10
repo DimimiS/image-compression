@@ -10,7 +10,7 @@ from skimage.metrics import peak_signal_noise_ratio as psnr
 
 # Paths
 test_dir = 'data/test'
-model_path = 'model.pth'
+model_path = 'checkpoints/model_epoch3.pth'
 
 # Datasets and Dataloaders
 test_dataset = ImageDataset(test_dir, transform=data_transforms['test'])

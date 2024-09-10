@@ -7,12 +7,11 @@ from utils.dataset import ImageDataset
 from utils.transforms import data_transforms
 from pytorch_msssim import MS_SSIM
 import time
-from models.rd_loss import BppDistortionLoss
-from torch.autograd import Variable
+import os
 
 # Paths
-train_dir = 'data/train/png'
-val_dir = 'data/val/png'
+train_dir = 'data/train/'
+val_dir = 'data/validation/'
 
 # Datasets and Dataloaders
 train_dataset = ImageDataset(train_dir, transform=data_transforms['train'])
@@ -27,11 +26,10 @@ model = Autoencoder().to(device)
 mse_loss = torch.nn.MSELoss()
 perceptual_loss = VGGPerceptualLoss().to(device)
 ms_ssim_loss = MS_SSIM(data_range=1.0, size_average=True, channel=3).to(device)
-bpp_distortion_loss = BppDistortionLoss(lmbda=0.01).to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
 # Training Loop
-for epoch in range(10):
+for epoch in range(500):
     print('-' * 10)
     print(f'Epoch {epoch+1}')
     print('-' * 10)
@@ -44,10 +42,14 @@ for epoch in range(10):
         optimizer.zero_grad()
 
         # Forward pass
-        outputs, y_hat = model(inputs)
+        outputs, y_hat, entropy = model(inputs)
 
         # Calculate loss
-        loss, bpp, mse = bpp_distortion_loss(inputs, outputs, y_hat, training=True)
+        mse = mse_loss(outputs, inputs)
+        bpp = entropy
+
+        loss = 0.001 * mse + bpp
+
         loss.backward()
 
         # Update weights
@@ -68,13 +70,29 @@ for epoch in range(10):
     with torch.no_grad():
         for i, inputs in enumerate(val_loader):
             inputs = inputs.to(device)
-            outputs, y_hat = model(inputs)
-            loss, bpp, mse = bpp_distortion_loss(inputs, outputs, y_hat, training=False)
+            outputs, y_hat, entropy = model(inputs)
+            
+            # Calculate loss
+            mse = mse_loss(outputs, inputs)
+            bpp = entropy
+
+            loss = 0.001 * mse + bpp
             val_loss += loss.item()
             if (i + 1) % 20 == 0:
                 print(f'Validation Batch {i+1}/{len(val_loader)}, Loss: {loss:.4f}, BPP: {bpp:.4f}, MSE: {mse:.4f}')
     
     avg_val_loss = val_loss / len(val_loader)
+
+    # Save checkpoint of epoch
+    save_path = f'checkpoints/model_epoch{epoch+1}.pth'
+    # Print save complete path
+    print(f'Saving model checkpoint to {os.path.abspath(save_path)}')
+    torch.save(model.state_dict(), save_path)
+    
+    # Delete previous checkpoint
+    prev_checkpoint = f'checkpoints/model_epoch{epoch}.pth'
+    if os.path.exists(prev_checkpoint):
+        os.remove(prev_checkpoint)
     print(f'Epoch {epoch+1}, Average Validation Loss: {avg_val_loss:.4f}')
     print(f'Time taken: {time.time() - start_time:.2f}s')
 
