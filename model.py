@@ -31,28 +31,40 @@ This script requires TFC v2 (`pip install tensorflow-compression==2.*`).
 """
 
 import argparse
-import glob
 import sys
 from absl import app
 from absl.flags import argparse_flags
 import tensorflow as tf
 import tensorflow_compression as tfc
-import tensorflow_datasets as tfds
+import tensorflow as tf
+from tensorflow.keras import layers
+from util.basic_util import read_png, write_png, get_dataset, get_custom_dataset, calculate_metrics
 
-# Suppress TensorFlow warnings
-tf.get_logger().setLevel('ERROR')
+class Sign(layers.Layer):
+    def call(self, inputs):
+        return tf.sign(inputs)
 
-def read_png(filename):
-  """Loads a PNG image file."""
-  string = tf.io.read_file(filename)
-  return tf.image.decode_image(string, channels=3)
+class Binarizer(layers.Layer):
+    def __init__(self, num_channels=128):
+        super(Binarizer, self).__init__()
+        self.conv = layers.Conv2D(
+            num_channels,
+            kernel_size=1,
+            use_bias=False,
+            kernel_initializer='he_normal'  # Using He normal initialization
+        )
+        self.batch_norm = layers.BatchNormalization()  # Adding Batch Normalization
+        self.sign = Sign()
 
+    def call(self, inputs):
+        feat = self.conv(inputs)
+        feat = self.batch_norm(feat)  # Normalize the feature maps
+        x = tf.tanh(feat)
 
-def write_png(filename, image):
-  """Saves an image to a PNG file."""
-  string = tf.image.encode_png(image)
-  tf.io.write_file(filename, string)
-
+        # Binarization with Straight-Through Estimator
+        binary_output = self.sign(x)
+        # Using straight-through estimator for gradients
+        return tf.where(tf.abs(x) > 0.5, tf.ones_like(x), tf.zeros_like(x)) + (inputs - tf.where(tf.abs(x) > 0.5, tf.ones_like(x), tf.zeros_like(x)))
 
 class AnalysisTransform(tf.keras.Sequential):
   """The analysis transform."""
@@ -61,15 +73,15 @@ class AnalysisTransform(tf.keras.Sequential):
     super().__init__(name="analysis")
     self.add(tf.keras.layers.Lambda(lambda x: x / 255.))
     self.add(tfc.SignalConv2D(
-        num_filters, (9, 9), name="layer_0", corr=True, strides_down=4,
+        num_filters, (9, 9), name="layer_0", corr=True, strides_down=2,
         padding="same_zeros", use_bias=True,
         activation=tfc.GDN(name="gdn_0")))
     self.add(tfc.SignalConv2D(
-        num_filters, (5, 5), name="layer_1", corr=True, strides_down=2,
+        num_filters*2, (5, 5), name="layer_1", corr=True, strides_down=2,
         padding="same_zeros", use_bias=True,
         activation=tfc.GDN(name="gdn_1")))
     self.add(tfc.SignalConv2D(
-        num_filters, (5, 5), name="layer_2", corr=True, strides_down=2,
+        num_filters*4, (5, 5), name="layer_2", corr=True, strides_down=2,
         padding="same_zeros", use_bias=False,
         activation=None))
 
@@ -80,29 +92,30 @@ class SynthesisTransform(tf.keras.Sequential):
   def __init__(self, num_filters):
     super().__init__(name="synthesis")
     self.add(tfc.SignalConv2D(
-        num_filters, (5, 5), name="layer_0", corr=False, strides_up=2,
+        num_filters*4, (5, 5), name="layer_0", corr=False, strides_up=2,
         padding="same_zeros", use_bias=True,
         activation=tfc.GDN(name="igdn_0", inverse=True)))
     self.add(tfc.SignalConv2D(
-        num_filters, (5, 5), name="layer_1", corr=False, strides_up=2,
+        num_filters*2, (5, 5), name="layer_1", corr=False, strides_up=2,
         padding="same_zeros", use_bias=True,
         activation=tfc.GDN(name="igdn_1", inverse=True)))
     self.add(tfc.SignalConv2D(
-        3, (9, 9), name="layer_2", corr=False, strides_up=4,
+        3, (9, 9), name="layer_2", corr=False, strides_up=2,
         padding="same_zeros", use_bias=True,
         activation=None))
     self.add(tf.keras.layers.Lambda(lambda x: x * 255.))
 
 
-class BLS2017Model(tf.keras.Model):
+class thesisModel(tf.keras.Model):
   """Main model class."""
 
   def __init__(self, lmbda, num_filters):
     super().__init__()
     self.lmbda = lmbda
     self.analysis_transform = AnalysisTransform(num_filters)
+    self.binarizer = Binarizer(num_channels=num_filters*4)
     self.synthesis_transform = SynthesisTransform(num_filters)
-    self.prior = tfc.NoisyDeepFactorized(batch_shape=(num_filters,))
+    self.prior = tfc.NoisyDeepFactorized(batch_shape=(num_filters*4,))
     self.build((None, None, None, 3))
 
   def call(self, x, training):
@@ -112,7 +125,8 @@ class BLS2017Model(tf.keras.Model):
     x = tf.cast(x, self.compute_dtype)  # TODO(jonycgn): Why is this necessary?
     y = self.analysis_transform(x)
     y_hat, bits = entropy_model(y, training=training)
-    x_hat = self.synthesis_transform(y_hat)
+    y_hat_binarized = self.binarizer(y_hat)
+    x_hat = self.synthesis_transform(y_hat_binarized)
     # Total number of bits divided by total number of pixels.
     num_pixels = tf.cast(tf.reduce_prod(tf.shape(x)[:-1]), bits.dtype)
     bpp = tf.reduce_sum(bits) / num_pixels
@@ -161,6 +175,7 @@ class BLS2017Model(tf.keras.Model):
     # After training, fix range coding tables.
     self.entropy_model = tfc.ContinuousBatchedEntropyModel(
         self.prior, coding_rank=3, compression=True)
+    print("Range coding tables fixed.")
     return retval
 
   @tf.function(input_signature=[
@@ -191,49 +206,6 @@ class BLS2017Model(tf.keras.Model):
     # Then cast back to 8-bit integer.
     return tf.saturate_cast(tf.round(x_hat), tf.uint8)
 
-
-def check_image_size(image, patchsize):
-  shape = tf.shape(image)
-  return shape[0] >= patchsize and shape[1] >= patchsize and shape[-1] == 3
-
-
-def crop_image(image, patchsize):
-  image = tf.image.random_crop(image, (patchsize, patchsize, 3))
-  return tf.cast(image, tf.keras.mixed_precision.global_policy().compute_dtype)
-
-
-def get_dataset(name, split, args):
-  """Creates input data pipeline from a TF Datasets dataset."""
-  with tf.device("/cpu:0"):
-    dataset = tfds.load(name, split=split, shuffle_files=True)
-    if split == "train":
-      dataset = dataset.repeat()
-    dataset = dataset.filter(
-        lambda x: check_image_size(x["image"], args.patchsize))
-    dataset = dataset.map(
-        lambda x: crop_image(x["image"], args.patchsize))
-    dataset = dataset.batch(args.batchsize, drop_remainder=True)
-  return dataset
-
-
-def get_custom_dataset(split, args):
-  """Creates input data pipeline from custom PNG images."""
-  with tf.device("/cpu:0"):
-    files = glob.glob(args.train_glob)
-    if not files:
-      raise RuntimeError(f"No training images found with glob "
-                         f"'{args.train_glob}'.")
-    dataset = tf.data.Dataset.from_tensor_slices(files)
-    dataset = dataset.shuffle(len(files), reshuffle_each_iteration=True)
-    if split == "train":
-      dataset = dataset.repeat()
-    dataset = dataset.map(
-        lambda x: crop_image(read_png(x), args.patchsize),
-        num_parallel_calls=args.preprocess_threads)
-    dataset = dataset.batch(args.batchsize, drop_remainder=True)
-  return dataset
-
-
 def train(args):
   """Instantiates and trains the model."""
   if args.precision_policy:
@@ -241,7 +213,7 @@ def train(args):
   if args.check_numerics:
     tf.debugging.enable_check_numerics()
 
-  model = BLS2017Model(args.lmbda, args.num_filters)
+  model = thesisModel(args.lmbda, args.num_filters)
   model.compile(
       optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
   )
@@ -307,7 +279,6 @@ def compress(args):
     print(f"Multiscale SSIM (dB): {msssim_db:0.2f}")
     print(f"Bits per pixel: {bpp:0.4f}")
 
-
 def decompress(args):
   """Decompresses an image."""
   # Load the model and determine the dtypes of tensors required to decompress.
@@ -324,6 +295,17 @@ def decompress(args):
   # Write reconstructed image out as a PNG file.
   write_png(args.output_file, x_hat)
 
+  # If requested, calculate metrics
+  if args.verbose:
+      # Assuming the original image is a PNG file with the same name as the input file but with a .png extension
+      original_image_path = args.input_file.replace('.tfci', '')
+      original_image = read_png(original_image_path)
+      psnr_value, ssim_value, bpp_value = calculate_metrics(original_image, x_hat, original_image_path, args.output_file)
+
+      print(f"PSNR: {psnr_value}")
+      print(f"SSIM: {ssim_value}")
+      print(f"BPP: {bpp_value}")
+
 
 def parse_args(argv):
   """Parses command line arguments."""
@@ -335,7 +317,7 @@ def parse_args(argv):
       "--verbose", "-V", action="store_true",
       help="Report progress and metrics when training or compressing.")
   parser.add_argument(
-      "--model_path", default="bls2017",
+      "--model_path", default="thesis_model",
       help="Path where to save/load the trained model.")
   subparsers = parser.add_subparsers(
       title="commands", dest="command",
@@ -372,7 +354,7 @@ def parse_args(argv):
       "--num_filters", type=int, default=128,
       help="Number of filters per layer.")
   train_cmd.add_argument(
-      "--train_path", default="/tmp/train_bls2017",
+      "--train_path", default="/tmp/train_thesis_model",
       help="Path where to log training metrics for TensorBoard and back up "
            "intermediate model checkpoints.")
   train_cmd.add_argument(
