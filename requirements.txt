@@ -1,0 +1,8 @@
+argparse
+glob
+sys
+absl
+tensorflow
+tensorflow_compression
+tensorflow_datasets
+skimage
