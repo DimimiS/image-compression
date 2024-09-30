@@ -1,174 +1,67 @@
-Mean squared error: 53.1040
-PSNR (dB): 30.88
-Multiscale SSIM: 0.9535
-Multiscale SSIM (dB): 13.33
-Bits per pixel: 0.4705
+
+Average Mean squared error: 184.28044166666666
+Average PSNR (dB): 26.055833333333336
+Average Multiscale SSIM: 0.8840916666666668
+Average Multiscale SSIM (dB): 9.531666666666666
+Average Bits per pixel: 0.101425
 
 
-Mean squared error: 33.5090
-PSNR (dB): 32.88
-Multiscale SSIM: 0.9742
-Multiscale SSIM (dB): 15.88
-Bits per pixel: 0.3857
+Average Mean squared error: 122.82030416666667
+Average PSNR (dB): 27.801249999999996
+Average Multiscale SSIM: 0.9230666666666668
+Average Multiscale SSIM (dB): 11.295416666666666
+Average Bits per pixel: 0.1962708333333333
 
 
-Mean squared error: 52.4304
-PSNR (dB): 30.93
-Multiscale SSIM: 0.9614
-Multiscale SSIM (dB): 14.14
-Bits per pixel: 0.4950
+Average Mean squared error: 80.56958333333333
+Average PSNR (dB): 29.603750000000005
+Average Multiscale SSIM: 0.9493041666666665
+Average Multiscale SSIM (dB): 13.121666666666663
+Average Bits per pixel: 0.3128583333333333
 
 
-Mean squared error: 40.5659
-PSNR (dB): 32.05
-Multiscale SSIM: 0.9426
-Multiscale SSIM (dB): 12.41
-Bits per pixel: 0.3875
+Average Mean squared error: 66.93686666666666
+Average PSNR (dB): 30.30125
+Average Multiscale SSIM: 0.9601083333333333
+Average Multiscale SSIM (dB): 14.144583333333337
+Average Bits per pixel: 0.42439166666666667
 
 
-Mean squared error: 30.4553
-PSNR (dB): 33.29
-Multiscale SSIM: 0.9826
-Multiscale SSIM (dB): 17.58
-Bits per pixel: 0.3957
+Average Mean squared error: 52.46543333333333
+Average PSNR (dB): 31.38041666666666
+Average Multiscale SSIM: 0.9669541666666666
+Average Multiscale SSIM (dB): 14.973333333333331
+Average Bits per pixel: 0.496075
 
 
-Mean squared error: 38.2550
-PSNR (dB): 32.30
-Multiscale SSIM: 0.9564
-Multiscale SSIM (dB): 13.60
-Bits per pixel: 0.3905
+Average Mean squared error: 46.26454583333333
+Average PSNR (dB): 31.877916666666668
+Average Multiscale SSIM: 0.9715583333333333
+Average Multiscale SSIM (dB): 15.615416666666674
+Average Bits per pixel: 0.6004208333333333
 
 
-Mean squared error: 60.9831
-PSNR (dB): 30.28
-Multiscale SSIM: 0.9628
-Multiscale SSIM (dB): 14.30
-Bits per pixel: 0.5749
+Average Mean squared error: 40.985325
+Average PSNR (dB): 32.38333333333334
+Average Multiscale SSIM: 0.9750916666666666
+Average Multiscale SSIM (dB): 16.188750000000002
+Average Bits per pixel: 0.6729124999999999
+Average Mean squared error: 36.62327083333334
+Average PSNR (dB): 32.852916666666665
+Average Multiscale SSIM: 0.9775749999999999
+Average Multiscale SSIM (dB): 16.643333333333334
+Average Bits per pixel: 0.7345458333333333
 
 
-Mean squared error: 22.5696
-PSNR (dB): 34.60
-Multiscale SSIM: 0.9755
-Multiscale SSIM (dB): 16.11
-Bits per pixel: 0.3207
+Average Mean squared error: 32.916937499999996
+Average PSNR (dB): 33.31083333333333
+Average Multiscale SSIM: 0.9797541666666666
+Average Multiscale SSIM (dB): 17.08541666666667
+Average Bits per pixel: 0.7891791666666669
 
 
-Mean squared error: 26.6546
-PSNR (dB): 33.87
-Multiscale SSIM: 0.9786
-Multiscale SSIM (dB): 16.69
-Bits per pixel: 0.3570
-
-
-Mean squared error: 68.7584
-PSNR (dB): 29.76
-Multiscale SSIM: 0.9633
-Multiscale SSIM (dB): 14.35
-Bits per pixel: 0.5840
-
-
-Mean squared error: 26.3879
-PSNR (dB): 33.92
-Multiscale SSIM: 0.9732
-Multiscale SSIM (dB): 15.72
-Bits per pixel: 0.3391
-
-
-Mean squared error: 38.3329
-PSNR (dB): 32.30
-Multiscale SSIM: 0.9641
-Multiscale SSIM (dB): 14.45
-Bits per pixel: 0.3801
-
-
-Mean squared error: 32.0568
-PSNR (dB): 33.07
-Multiscale SSIM: 0.9767
-Multiscale SSIM (dB): 16.33
-Bits per pixel: 0.3780
-
-
-Mean squared error: 79.3354
-PSNR (dB): 29.14
-Multiscale SSIM: 0.9705
-Multiscale SSIM (dB): 15.31
-Bits per pixel: 0.7017
-
-
-Mean squared error: 125.2390
-PSNR (dB): 27.15
-Multiscale SSIM: 0.9629
-Multiscale SSIM (dB): 14.31
-Bits per pixel: 0.9945
-
-
-Mean squared error: 76.4725
-PSNR (dB): 29.30
-Multiscale SSIM: 0.9762
-Multiscale SSIM (dB): 16.24
-Bits per pixel: 0.7344
-
-
-Mean squared error: 71.3435
-PSNR (dB): 29.60
-Multiscale SSIM: 0.9634
-Multiscale SSIM (dB): 14.36
-Bits per pixel: 0.6173
-
-
-Mean squared error: 53.2847
-PSNR (dB): 30.86
-Multiscale SSIM: 0.9745
-Multiscale SSIM (dB): 15.94
-Bits per pixel: 0.5316
-
-
-Mean squared error: 28.8561
-PSNR (dB): 33.53
-Multiscale SSIM: 0.9618
-Multiscale SSIM (dB): 14.18
-Bits per pixel: 0.3568
-
-
-Mean squared error: 39.0614
-PSNR (dB): 32.21
-Multiscale SSIM: 0.9635
-Multiscale SSIM (dB): 14.38
-Bits per pixel: 0.4045
-
-
-Mean squared error: 87.4292
-PSNR (dB): 28.71
-Multiscale SSIM: 0.9774
-Multiscale SSIM (dB): 16.45
-Bits per pixel: 0.7875
-
-
-Mean squared error: 74.6015
-PSNR (dB): 29.40
-Multiscale SSIM: 0.9703
-Multiscale SSIM (dB): 15.27
-Bits per pixel: 0.6328
-
-
-Mean squared error: 29.1864
-PSNR (dB): 33.48
-Multiscale SSIM: 0.9725
-Multiscale SSIM (dB): 15.61
-Bits per pixel: 0.3694
-
-
-Mean squared error: 45.9815
-PSNR (dB): 31.50
-Multiscale SSIM: 0.9659
-Multiscale SSIM (dB): 14.68
-Bits per pixel: 0.4497
-
-
-
-Average Mean squared error: 51.45225416666667
-Average PSNR (dB): 31.45875
-Average Multiscale SSIM: 0.9676583333333334
-Average Multiscale SSIM (dB): 15.0675
-Average Bits per pixel: 0.5016208333333333
+Average Mean squared error: 28.177629166666666
+Average PSNR (dB): 33.955000000000005
+Average Multiscale SSIM: 0.9823166666666666
+Average Multiscale SSIM (dB): 17.67083333333333
+Average Bits per pixel: 0.9059666666666667
