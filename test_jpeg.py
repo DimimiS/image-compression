@@ -1,71 +1,59 @@
 import os
 import subprocess
-import random
-from PIL import Image
 import numpy as np
-from skimage.metrics import peak_signal_noise_ratio as psnr
-from skimage.metrics import structural_similarity as ssim
+from PIL import Image
 
-def calculate_bpp(image_path, compressed_path):
-    original_img = Image.open(image_path)
-    original_size = original_img.size[0] * original_img.size[1]
-    compressed_size = os.path.getsize(compressed_path) * 8
-    bpp = compressed_size / original_size
-    return bpp
-
-def compress_image_jpeg(image_path, quality):
+def compress_image_jpeg(image_path, quality, output_dir):
     img = Image.open(image_path)
-    compressed_path = image_path.replace('data/test', 'data/compressed').replace('.png', '.jpg')
+    compressed_path = os.path.join(output_dir, os.path.basename(image_path).replace('.png', '.jpg'))
     os.makedirs(os.path.dirname(compressed_path), exist_ok=True)
     img.save(compressed_path, quality=quality)
     return compressed_path
 
-def compress_image_bpg(image_path, qp):
-    compressed_path = image_path.replace('data/test', 'data/compressed').replace('.png', '.bpg')
-    os.makedirs(os.path.dirname(compressed_path), exist_ok=True)
-    subprocess.call(['bpgenc', '-q', str(qp), '-m', '9', '-f', '444', '-o', compressed_path, image_path])
-    return compressed_path
+def calculate_bpp(original_path, compressed_path):
+    original_size = os.path.getsize(original_path)
+    compressed_size = os.path.getsize(compressed_path)
+    bpp = (compressed_size * 8) / (Image.open(original_path).size[0] * Image.open(original_path).size[1])
+    return bpp
 
-def find_quality_for_bpp(image_path, max_bpp, tolerance=0.01, codec='jpeg'):
+def psnr(img1, img2):
+    mse = np.mean((img1 - img2) ** 2)
+    if mse == 0:
+        return float('inf')
+    PIXEL_MAX = 255.0
+    return 20 * np.log10(PIXEL_MAX / np.sqrt(mse))
+
+def find_quality_for_specific_bpp(image_path, target_bpp, tolerance=0.01, output_dir='data/compressed'):
     low, high = 1, 100
     best_quality = None
     best_bpp = None
     best_psnr = None
-    best_msssim = None
 
     while low <= high:
         mid = (low + high) // 2
-        if codec == 'jpeg':
-            compressed_path = compress_image_jpeg(image_path, mid)
-        elif codec == 'bpg':
-            compressed_path = compress_image_bpg(image_path, mid)
-        else:
-            raise ValueError("Unsupported codec")
-
+        compressed_path = compress_image_jpeg(image_path, mid, output_dir)
         bpp = calculate_bpp(image_path, compressed_path)
-        psnr_value = psnr(np.array(Image.open(image_path)), np.array(Image.open(compressed_path)))
-        msssim_value = ssim(np.array(Image.open(image_path)), np.array(Image.open(compressed_path)), multichannel=True, win_size=3, channel_axis=-1)
+        img1 = np.array(Image.open(image_path))
+        img2 = np.array(Image.open(compressed_path))
+        psnr_value = psnr(img1, img2)
 
-        if abs(bpp - max_bpp) < tolerance:
+        if abs(bpp - target_bpp) < tolerance:
             best_quality = mid
             best_bpp = bpp
             best_psnr = psnr_value
-            best_msssim = msssim_value
             break
-        elif bpp > max_bpp:
+        elif bpp > target_bpp:
             high = mid - 1
         else:
             low = mid + 1
 
-    return best_quality, best_bpp, best_psnr, best_msssim
+    return best_quality, best_bpp, best_psnr
 
 def main():
     test_dir = 'data/test'
-    max_bpp_values = [0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
+    output_dir = 'data/compressed'
+    target_bpp = 0.95  # Specify the target BPP value
     tolerance = 0.01  # Tolerance for BPP matching
-    codec = 'jpeg'  # Change to 'bpg' for BPG compression
-
-    results = {bpp: {'psnr': [], 'msssim': []} for bpp in max_bpp_values}
 
     # Get a list of all image files in the test directory
     image_files = [f for f in os.listdir(test_dir) if f.endswith(('.jpg', '.jpeg', '.png'))]
@@ -74,24 +62,13 @@ def main():
         print("No images found in the test directory.")
         return
 
-    for max_bpp in max_bpp_values:
-        # Randomly select one image for each bpp value
-        filename = random.choice(image_files)
+    for filename in image_files:
         original_path = os.path.join(test_dir, filename)
-
-        quality, bpp, psnr_value, msssim_value = find_quality_for_bpp(original_path, max_bpp, tolerance, codec)
+        quality, bpp, psnr_value = find_quality_for_specific_bpp(original_path, target_bpp, tolerance, output_dir)
         if quality is not None:
-            results[max_bpp]['psnr'].append(psnr_value)
-            results[max_bpp]['msssim'].append(msssim_value)
-            print(f'File: {filename}, BPP: {max_bpp}, Quality: {quality}, PSNR: {psnr_value:.2f}, MS-SSIM: {msssim_value:.4f}')
+            print(f'File: {filename}, Target BPP: {target_bpp}, Quality: {quality}, BPP: {bpp:.2f}, PSNR: {psnr_value:.2f}')
         else:
-            print(f'File: {filename} - Could not match target BPP {max_bpp} within tolerance.')
-
-    # Calculate and print average values
-    for max_bpp in max_bpp_values:
-        avg_psnr = np.mean(results[max_bpp]['psnr']) if results[max_bpp]['psnr'] else None
-        avg_msssim = np.mean(results[max_bpp]['msssim']) if results[max_bpp]['msssim'] else None
-        print(f'Average for BPP {max_bpp}: PSNR: {avg_psnr}, MS-SSIM: {avg_msssim}')
+            print(f'File: {filename} - Could not match target BPP {target_bpp} within tolerance.')
 
 if __name__ == "__main__":
     main()

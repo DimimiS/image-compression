@@ -28,3 +28,7 @@ thesis_model1000/variables/variables.data-00000-of-00001
 thesis_model1000/variables/variables.index
 util/__pycache__/basic_util.cpython-310.pyc
 crop.py
+get_bpp.py
+train.sh
+codes.npy
+shape.npy
