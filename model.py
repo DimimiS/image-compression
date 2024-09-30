@@ -51,8 +51,7 @@ class Binarizer(layers.Layer):
             num_channels,
             kernel_size=1,
             use_bias=False,
-            kernel_initializer='he_normal'  # Using He normal initialization
-        )
+            )
         self.batch_norm = layers.BatchNormalization()  # Adding Batch Normalization
         self.sign = Sign()
 
@@ -73,15 +72,19 @@ class AnalysisTransform(tf.keras.Sequential):
     super().__init__(name="analysis")
     self.add(tf.keras.layers.Lambda(lambda x: x / 255.))
     self.add(tfc.SignalConv2D(
-        num_filters, (9, 9), name="layer_0", corr=True, strides_down=2,
+        num_filters/2, (9, 9), name="layer_0", corr=True, strides_down=2,
         padding="same_zeros", use_bias=True,
         activation=tfc.GDN(name="gdn_0")))
     self.add(tfc.SignalConv2D(
-        num_filters*2, (5, 5), name="layer_1", corr=True, strides_down=2,
+        num_filters, (5, 5), name="layer_1", corr=True, strides_down=2,
         padding="same_zeros", use_bias=True,
         activation=tfc.GDN(name="gdn_1")))
     self.add(tfc.SignalConv2D(
-        num_filters*4, (5, 5), name="layer_2", corr=True, strides_down=2,
+        num_filters*2, (5, 5), name="layer_2", corr=True, strides_down=2,
+        padding="same_zeros", use_bias=True,
+        activation=tfc.GDN(name="gdn_2")))
+    self.add(tfc.SignalConv2D(
+        num_filters*4, (5, 5), name="layer_3", corr=True, strides_down=2,
         padding="same_zeros", use_bias=False,
         activation=None))
 
@@ -100,7 +103,11 @@ class SynthesisTransform(tf.keras.Sequential):
         padding="same_zeros", use_bias=True,
         activation=tfc.GDN(name="igdn_1", inverse=True)))
     self.add(tfc.SignalConv2D(
-        3, (9, 9), name="layer_2", corr=False, strides_up=2,
+        num_filters, (5, 5), name="layer_2", corr=False, strides_up=2,
+        padding="same_zeros", use_bias=True,
+        activation=tfc.GDN(name="igdn_2", inverse=True)))
+    self.add(tfc.SignalConv2D(
+        3, (9, 9), name="layer_3", corr=False, strides_up=2,
         padding="same_zeros", use_bias=True,
         activation=None))
     self.add(tf.keras.layers.Lambda(lambda x: x * 255.))
