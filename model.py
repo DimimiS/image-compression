@@ -51,20 +51,19 @@ class Binarizer(layers.Layer):
             num_channels,
             kernel_size=1,
             use_bias=False,
-            )
+            activation='tanh'  # Use tanh as the activation function
+        )
         self.batch_norm = layers.BatchNormalization()  # Adding Batch Normalization
         self.sign = Sign()
 
     def call(self, inputs):
         feat = self.conv(inputs)
         feat = self.batch_norm(feat)  # Normalize the feature maps
-        x = tf.tanh(feat)
 
         # Binarization with Straight-Through Estimator
-        binary_output = self.sign(x)
-        # Using straight-through estimator for gradients
-        return tf.where(tf.abs(x) > 0.5, tf.ones_like(x), tf.zeros_like(x)) + (inputs - tf.where(tf.abs(x) > 0.5, tf.ones_like(x), tf.zeros_like(x)))
-
+        binary_output = self.sign(feat)
+        return binary_output
+    
 class AnalysisTransform(tf.keras.Sequential):
   """The analysis transform."""
 
@@ -131,9 +130,9 @@ class thesisModel(tf.keras.Model):
         self.prior, coding_rank=3, compression=False)
     x = tf.cast(x, self.compute_dtype)  # TODO(jonycgn): Why is this necessary?
     y = self.analysis_transform(x)
-    y_hat, bits = entropy_model(y, training=training)
-    y_hat_binarized = self.binarizer(y_hat)
-    x_hat = self.synthesis_transform(y_hat_binarized)
+    y_hat_binarized = self.binarizer(y)
+    y_hat, bits = entropy_model(y_hat_binarized, training=training)
+    x_hat = self.synthesis_transform(y_hat)
     # Total number of bits divided by total number of pixels.
     num_pixels = tf.cast(tf.reduce_prod(tf.shape(x)[:-1]), bits.dtype)
     bpp = tf.reduce_sum(bits) / num_pixels
