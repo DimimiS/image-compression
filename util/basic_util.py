@@ -64,8 +64,11 @@ def calculate_metrics(original_image, decompressed_image, original_image_path, d
     original_image = tf.image.convert_image_dtype(original_image, dtype=tf.uint8).numpy()
     decompressed_image = tf.image.convert_image_dtype(decompressed_image, dtype=tf.uint8).numpy()
 
-    psnr_value = psnr(original_image, decompressed_image)
-    ssim_value = ssim(original_image, decompressed_image, win_size=3, channel_axis=-1)  # Set win_size and channel_axis
+    # Calculate PSNR
+    psnr_value = tf.image.psnr(original_image, decompressed_image, max_val=255).numpy()
+
+    # Calculate SSIM
+    ssim_value = tf.image.ssim_multiscale(original_image, decompressed_image, max_val=255).numpy()
 
     # Calculate BPP (assuming the decompressed image is stored in a file)
     original_size = tf.io.gfile.stat(original_image_path).length
