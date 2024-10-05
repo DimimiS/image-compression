@@ -50,8 +50,7 @@ class Binarizer(layers.Layer):
         self.conv = layers.Conv2D(
             num_channels,
             kernel_size=1,
-            use_bias=False,
-            activation='tanh'  # Use tanh as the activation function
+            use_bias=False
         )
         self.batch_norm = layers.BatchNormalization()  # Adding Batch Normalization
         self.sign = Sign()
@@ -59,9 +58,10 @@ class Binarizer(layers.Layer):
     def call(self, inputs):
         feat = self.conv(inputs)
         feat = self.batch_norm(feat)  # Normalize the feature maps
+        x = tf.nn.tanh(feat)  # Binarization with Straight-Through Estimator
 
         # Binarization with Straight-Through Estimator
-        binary_output = self.sign(feat)
+        binary_output = self.sign(x)
         return binary_output
     
 class AnalysisTransform(tf.keras.Sequential):
