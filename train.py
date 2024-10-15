@@ -1,99 +1,69 @@
 import torch
-from torch.utils.data import DataLoader
 import torch.optim as optim
-from models.autoencoder import Autoencoder
-from models.vgg_perceptual_loss import VGGPerceptualLoss
+from torch.utils.data import DataLoader
+from compressai.losses import RateDistortionLoss
 from utils.dataset import ImageDataset
 from utils.transforms import data_transforms
-from pytorch_msssim import MS_SSIM
 import time
-import os
+from models.autoencoder import Autoencoder
 
-# Paths
-train_dir = 'data/train/'
-val_dir = 'data/validation/'
 
-# Datasets and Dataloaders
-train_dataset = ImageDataset(train_dir, transform=data_transforms['train'])
-val_dataset = ImageDataset(val_dir, transform=data_transforms['val'])
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(device)
-
-# Model, Loss, Optimizer
+# Training setup
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = Autoencoder().to(device)
-mse_loss = torch.nn.MSELoss()
-perceptual_loss = VGGPerceptualLoss().to(device)
-ms_ssim_loss = MS_SSIM(data_range=1.0, size_average=True, channel=3).to(device)
-optimizer = optim.Adam(model.parameters(), lr=1e-4)
+parameters = set(p for n, p in model.named_parameters() if not n.endswith(".quantiles"))
+aux_parameters = set(p for n, p in model.named_parameters() if n.endswith(".quantiles"))
+optimizer = optim.Adam(parameters, lr=1e-4)
+aux_optimizer = optim.Adam(aux_parameters, lr=1e-3)
 
-# Training Loop
-for epoch in range(500):
-    print('-' * 10)
-    print(f'Epoch {epoch+1}')
-    print('-' * 10)
-    print('Training...')
-    start_time = time.time()
+criterion = RateDistortionLoss(lmbda=0.001)
+
+# Path to the training dataset
+train_dir = 'data/train/'
+
+# Create the training dataset and dataloader
+train_dataset = ImageDataset(train_dir, transform=data_transforms['train'])
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+
+# Training loop
+num_epochs = 100
+for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
-    for i, inputs in enumerate(train_loader):
-        inputs = inputs.to(device)
+    running_mse_loss = 0.0
+    running_bpp_loss = 0.0
+    start_time = time.time()
+    
+    for images in train_loader:
         optimizer.zero_grad()
+        aux_optimizer.zero_grad()
+        images = images.to(device)
+        outputs = model(images)
+        loss = criterion(outputs, images)
+        backward_loss = loss["loss"]
+        backward_loss.backward()
 
-        # Forward pass
-        outputs, y_hat, entropy = model(inputs)
-
-        # Calculate loss
-        mse = mse_loss(outputs, inputs)
-        bpp = entropy
-
-        loss = 0.001 * mse + bpp
-
-        loss.backward()
-
-        # Update weights
+        aux_loss = model.aux_loss()
+        aux_loss.backward()
+        aux_optimizer.step()
         optimizer.step()
         
-        running_loss += loss.item()
-        if (i + 1) % 20 == 0:  # Print every 20 batches
-            print(f'Batch {i+1}/{len(train_loader)}, Loss: {loss:.4f}, BPP: {bpp:.4f}, MSE: {mse:.4f}')
+        running_loss += backward_loss.item()
+        running_mse_loss += loss["mse_loss"].item()
+        running_bpp_loss += loss["bpp_loss"].item()
+
+    epoch_loss = running_loss / len(train_loader)
+    epoch_mse_loss = running_mse_loss / len(train_loader)
+    epoch_bpp_loss = running_bpp_loss / len(train_loader)
+    epoch_time = time.time() - start_time
     
-    avg_train_loss = running_loss / len(train_loader)
-    print(f'Epoch {epoch+1}, Average Training Loss: {avg_train_loss:.4f}')
-    print(f'Time taken: {time.time() - start_time:.2f}s')
+    print(f'Epoch [{epoch+1}/{num_epochs}], '
+          f'Loss: {epoch_loss:.4f}, '
+          f'MSE Loss: {epoch_mse_loss:.4f}, '
+          f'BPP Loss: {epoch_bpp_loss:.4f}, '
+          f'Time: {epoch_time:.2f}s')
 
-    print('Validation loss calculation...')
-    # Validation
-    model.eval()
-    val_loss = 0.0
-    with torch.no_grad():
-        for i, inputs in enumerate(val_loader):
-            inputs = inputs.to(device)
-            outputs, y_hat, entropy = model(inputs)
-            
-            # Calculate loss
-            mse = mse_loss(outputs, inputs)
-            bpp = entropy
-
-            loss = 0.001 * mse + bpp
-            val_loss += loss.item()
-            if (i + 1) % 20 == 0:
-                print(f'Validation Batch {i+1}/{len(val_loader)}, Loss: {loss:.4f}, BPP: {bpp:.4f}, MSE: {mse:.4f}')
-    
-    avg_val_loss = val_loss / len(val_loader)
-
-    # Save checkpoint of epoch
-    save_path = f'checkpoints/model_epoch{epoch+1}.pth'
-    # Print save complete path
-    print(f'Saving model checkpoint to {os.path.abspath(save_path)}')
-    torch.save(model.state_dict(), save_path)
-    
-    # Delete previous checkpoint
-    prev_checkpoint = f'checkpoints/model_epoch{epoch}.pth'
-    if os.path.exists(prev_checkpoint):
-        os.remove(prev_checkpoint)
-    print(f'Epoch {epoch+1}, Average Validation Loss: {avg_val_loss:.4f}')
-    print(f'Time taken: {time.time() - start_time:.2f}s')
-
-torch.save(model.state_dict(), 'model.pth')
+    # Save the trained model
+    torch.save(model.encoder.state_dict(), 'checkpoints/001/encoder.pth')
+    torch.save(model.entropy_bottleneck.state_dict(), 'checkpoints/001/entropy_bottleneck.pth')
+    torch.save(model.decoder.state_dict(), 'checkpoints/001/decoder.pth')
