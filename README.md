@@ -28,5 +28,5 @@ python train.py ["lamda-decimal-value (001)"]
 
 To evaluate the model on the test dataset, run:
 ```bash
-python evaluate.py ["dataset-path images/test/"]
+python evaluate.py ["dataset-path (images/test/)"]
 ```
