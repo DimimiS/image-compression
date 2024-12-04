@@ -1,7 +1,6 @@
 from compressai.models import CompressionModel
 from compressai.layers import GDN
 from compressai.entropy_models import EntropyBottleneck
-from models.sign import Binarizer
 import torch.nn as nn
 
 # Define the Encoder
@@ -66,11 +65,13 @@ class Autoencoder(CompressionModel):
 
     def compress(self, x):
         y = self.encoder(x)
-        y_strings = self.entropy_bottleneck.compress(y)
+        y_quantized = self.entropy_bottleneck.quantize(y, mode='noise')
+        y_strings = self.entropy_bottleneck.compress(y_quantized)
         return {"strings": [y_strings], "shape": y.size()[-2:]}
 
     def decompress(self, strings, shape):
         assert isinstance(strings, list) and len(strings) == 1
         y_hat = self.entropy_bottleneck.decompress(strings[0], shape)
-        x_hat = self.decoder(y_hat).clamp_(0, 1)
+        y_hat_dequantized = self.entropy_bottleneck.dequantize(y_hat)
+        x_hat = self.decoder(y_hat_dequantized).clamp_(0, 1)
         return x_hat

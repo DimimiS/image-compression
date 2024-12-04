@@ -21,12 +21,12 @@ This project implements an image compression model using a deep neural network w
 
 To train the model, run:
 ```bash
-python train.py
+python train.py ["lamda-decimal-value (001)"]
 ```
 
 ## Evaluation
 
 To evaluate the model on the test dataset, run:
 ```bash
-python evaluate.py
+python evaluate.py ["dataset-path images/test/"]
 ```

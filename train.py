@@ -6,6 +6,12 @@ from utils.dataset import ImageDataset
 from utils.transforms import data_transforms
 import time
 from models.autoencoder import Autoencoder
+import os
+import sys
+
+cwd = os.getcwd()
+checkpoint = sys.argv[1] if len(sys.argv) > 1 else "01"
+model_path = os.path.join(cwd, f"checkpoints/{checkpoint}")
 
 
 # Training setup
@@ -16,7 +22,7 @@ aux_parameters = set(p for n, p in model.named_parameters() if n.endswith(".quan
 optimizer = optim.Adam(parameters, lr=1e-4)
 aux_optimizer = optim.Adam(aux_parameters, lr=1e-3)
 
-criterion = RateDistortionLoss(lmbda=0.001)
+criterion = RateDistortionLoss(lmbda=0.01 * int(checkpoint))
 
 # Path to the training dataset
 train_dir = 'data/train/'
@@ -26,7 +32,7 @@ train_dataset = ImageDataset(train_dir, transform=data_transforms['train'])
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
 # Training loop
-num_epochs = 100
+num_epochs = 200
 for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
@@ -64,6 +70,6 @@ for epoch in range(num_epochs):
           f'Time: {epoch_time:.2f}s')
 
     # Save the trained model
-    torch.save(model.encoder.state_dict(), 'checkpoints/001/encoder.pth')
-    torch.save(model.entropy_bottleneck.state_dict(), 'checkpoints/001/entropy_bottleneck.pth')
-    torch.save(model.decoder.state_dict(), 'checkpoints/001/decoder.pth')
+    torch.save(model.encoder.state_dict(), model_path + '/encoder.pth')
+    torch.save(model.entropy_bottleneck.state_dict(), model_path + '/entropy_bottleneck.pth')
+    torch.save(model.decoder.state_dict(), model_path + '/decoder.pth')

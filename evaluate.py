@@ -8,12 +8,17 @@ from pytorch_msssim import MS_SSIM
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import structural_similarity as ssim
 from models.autoencoder import Encoder, Decoder, Autoencoder
-from models.sign import Binarizer
+import sys
+import os
+
+cwd = os.getcwd()
+checkpoint = sys.argv[1] if len(sys.argv) > 1 else "01"
+model_path = os.path.join(cwd, f"checkpoints/{checkpoint}")
 
 # Load the saved model
-encoder_path = 'checkpoints/00125/encoder.pth'
-entropy_bottleneck_path = 'checkpoints/00125/entropy_bottleneck.pth'
-decoder_path = 'checkpoints/00125/decoder.pth'
+encoder_path = model_path + '/encoder.pth'
+entropy_bottleneck_path = model_path + '/entropy_bottleneck.pth'
+decoder_path = model_path + '/decoder.pth'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 model = Autoencoder().to(device)
@@ -27,42 +32,47 @@ model.eval()
 model.entropy_bottleneck.update()
 
 # Path to the test dataset
-test_dir = 'data/test/'
+test_dir = sys.argv[2] if len(sys.argv) > 2 else 'data/test/'
 
 # Create the test dataset and dataloader
 test_dataset = ImageDataset(test_dir, transform=data_transforms['test'])
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
 # Define loss functions
-criterion = RateDistortionLoss(lmbda=0.01)
+criterion = RateDistortionLoss(lmbda=0.01 * int(checkpoint))
 ms_ssim_loss = MS_SSIM(data_range=1.0, size_average=True, channel=3).to(device)
 
 test_loss = 0
 
 psnr_values = []
+ms_ssim_values = []
 ssim_values = []
 bpp_values = []
 
 with torch.no_grad():
     for inputs in test_loader:
         inputs = inputs.to(device)  # Move inputs to the same device as the model
-        latent = model.compress(inputs)
-        outputs = model.decompress(latent["strings"], latent["shape"])
 
+        latent = model.encoder(inputs)
+        latent_hat, likelihoods = model.entropy_bottleneck(latent)
+        output = model(inputs)
+        outputs = output["x_hat"]
+        likelihoods = output["likelihoods"]
 
-        for i, (input_img, output_img, compressed_string) in enumerate(zip(inputs, outputs, latent["strings"])):
-            input_img = input_img.permute(1, 2, 0).cpu().numpy()  # Convert to HWC format
-            output_img = output_img.permute(1, 2, 0).cpu().numpy()  # Convert to HWC format
+        # Calculate the loss
+        loss = criterion({"x_hat": outputs, "likelihoods": likelihoods}, inputs)
+        test_loss += loss["loss"].item()
 
-            num_pixels = input_img.shape[0] * input_img.shape[1]
-            bpp = sum(len(c) * 8 / num_pixels for c in compressed_string)
+        # Calculate the MS-SSIM loss
+        ms_ssim_val = ms_ssim_loss(outputs, inputs)
+        ssim_val = ssim(inputs[0].permute(1, 2, 0).cpu().numpy(), outputs[0].permute(1, 2, 0).cpu().numpy(), multichannel=True, win_size=3, data_range=1.0)
+        psnr_val = psnr(inputs[0].permute(1, 2, 0).cpu().numpy(), outputs[0].permute(1, 2, 0).cpu().numpy(), data_range=1.0)
+        bpp_val = loss["bpp_loss"].item()
 
-            ssim_val = ssim(input_img, output_img, multichannel=True, win_size=3, data_range=1.0)
-            psnr_val = psnr(input_img, output_img, data_range=1.0)
-
-            psnr_values.append(psnr_val)
-            ssim_values.append(ssim_val)
-            bpp_values.append(bpp/len(compressed_string))
+        psnr_values.append(psnr_val)
+        ssim_values.append(ssim_val)
+        ms_ssim_values.append(ms_ssim_val)
+        bpp_values.append(bpp_val)
 
 test_loss /= len(test_loader)
 print(f'Test Loss: {test_loss:.4f}')
@@ -72,7 +82,7 @@ import os
 import torchvision
 from PIL import Image
 
-output_dir = 'output'
+output_dir = model_path + '/output'
 os.makedirs(output_dir, exist_ok=True)
 
 model.eval()
@@ -93,7 +103,7 @@ with torch.no_grad():
                     input_img = inputs[j].permute(1, 2, 0).cpu().numpy()
                     output_img = outputs[j].permute(1, 2, 0).cpu().numpy()  # Explicitly select the image tensor
                     
-                    Image.fromarray((input_img * 255).astype('uint8')).show()
+                    # Image.fromarray((input_img * 255).astype('uint8')).show()
                     Image.fromarray((output_img * 255).astype('uint8')).show()
 
 # Output: Test Loss: 0.0162
@@ -102,13 +112,14 @@ with torch.no_grad():
 # The test loss is printed at the end of the evaluation process.
 
 # Save all the values from the bpp, PSNR, and SSIM arrays in a text file
-with open('evaluation_results.txt', 'w') as f:
-    for bpp_val, psnr_val, ssim_val in zip(bpp_values, psnr_values, ssim_values):
-        f.write(f'{bpp_val:.4f}, {psnr_val:.2f}, {ssim_val:.4f}\n')
+with open(model_path + '/evaluation_results.txt', 'w') as f:
+    for bpp_val, psnr_val, ms_ssim_val in zip(bpp_values, psnr_values, ms_ssim_values):
+        f.write(f'{bpp_val:.4f}, {psnr_val:.2f}, {ms_ssim_val:.4f}\n')
 
 avg_psnr = np.mean(psnr_values)
-avg_ssim = np.mean(ssim_values)
+ms_ssim_values_cpu = [val.cpu().numpy() for val in ms_ssim_values]  # Move all tensors to CPU and convert to NumPy arrays
+avg_ms_ssim = np.mean(ms_ssim_values_cpu)
 avg_bpp = np.mean(bpp_values)
 print(f'Average PSNR: {avg_psnr:.2f}')
-print(f'Average SSIM: {avg_ssim:.4f}')
+print(f'Average MSSSIM: {avg_ms_ssim:.4f}')
 print(f'Average bpp: {avg_bpp:.4f}')
