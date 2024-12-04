@@ -1,8 +1,4 @@
-argparse
-glob
-sys
-absl
-tensorflow
-tensorflow_compression
-tensorflow_datasets
-skimage
+torch
+torchvision
+pillow
+pytorch_msssim
